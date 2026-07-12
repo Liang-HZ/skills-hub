@@ -1,0 +1,11 @@
+# 用户本地数据(库内容 library/ 与组合 sets/ 由应用自动 git 提交,不忽略)
+vendor/
+targets.txt
+attic/
+reviews/
+config/
+.state/
+.logs/
+
+__pycache__/
+.DS_Store

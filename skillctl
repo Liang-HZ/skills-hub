@@ -1,0 +1,215 @@
+#!/bin/bash
+# skillctl — 中央 skill 库管理:一处管理(~/skills-hub/library),处处软链接引用
+#
+# 用法:
+#   skillctl list                              # 列出库中所有 skill 及启用位置
+#   skillctl sets                              # 列出所有集合及内容
+#   skillctl enable  <目标> <skill…|@集合…> [--copy]   # 链接(或复制)到目标
+#   skillctl disable <目标> <skill…|@集合…> [--force]  # 从目标移除
+#   skillctl status  [目标…]                   # 检查目标里每一项的来源与健康度
+#   skillctl add <目录…> [--link-back]          # 把现有 skill 收编入库(--link-back 原地留软链接)
+#   skillctl new <名字>                         # 在库里新建 skill 骨架
+#
+# <目标> 可以是:
+#   claude   -> ~/.claude/skills        (Claude Code 全局)
+#   codex    -> ~/.codex/skills         (Codex 全局)
+#   agents   -> ~/.agents/skills        (通用 Agents 全局)
+#   任意路径          -> <路径>/.claude/skills  (项目级,默认放 .claude)
+#   任意路径::codex   -> <路径>/.codex/skills   (项目级,放 .codex)
+#   任意路径::agents  -> <路径>/.agents/skills  (项目级,放 .agents)
+#
+# 例子:
+#   skillctl enable claude @claude-root
+#   skillctl enable ~/work/some-task scope-lock impl-discipline
+#   skillctl enable codex dual-pilot && skillctl disable codex dual-pilot
+set -euo pipefail
+
+HUB="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LIB="$HUB/library"
+SETS="$HUB/sets"
+
+usage() { sed -n '2,24p' "${BASH_SOURCE[0]}"; }
+
+resolve_target() {
+  case "$1" in
+    claude) echo "$HOME/.claude/skills" ;;
+    codex)  echo "$HOME/.codex/skills" ;;
+    agents) echo "$HOME/.agents/skills" ;;
+    *::codex)  echo "${1%::codex}/.codex/skills" ;;
+    *::agents) echo "${1%::agents}/.agents/skills" ;;
+    *::claude) echo "${1%::claude}/.claude/skills" ;;
+    *)      echo "${1%/}/.claude/skills" ;;
+  esac
+}
+
+# 展开 @集合 并校验 skill 名,输出一行一个
+expand_names() {
+  local n f
+  for n in "$@"; do
+    case "$n" in
+      @*)
+        f="$SETS/${n#@}.txt"
+        [ -f "$f" ] || { echo "错误: 没有集合 '${n#@}'(skillctl sets 查看)" >&2; exit 1; }
+        grep -vE '^[[:space:]]*(#|$)' "$f"
+        ;;
+      *)
+        [ -d "$LIB/$n" ] || { echo "错误: 库里没有 skill '$n'(skillctl list 查看)" >&2; exit 1; }
+        echo "$n"
+        ;;
+    esac
+  done
+}
+
+desc_of() {
+  grep -m1 '^description:' "$LIB/$1/SKILL.md" 2>/dev/null | sed 's/^description:[[:space:]]*//' | cut -c1-56
+}
+
+# 判定目标目录里一个条目的状态: hub-link | foreign-link | broken-link | copy-synced | copy-diverged | local-dir
+entry_state() {
+  local p="$1" name="$2"
+  if [ -L "$p" ]; then
+    if [ ! -e "$p" ]; then echo "broken-link"
+    elif [[ "$(readlink "$p")" == "$LIB/"* ]]; then echo "hub-link"
+    else echo "foreign-link"; fi
+  elif [ -d "$p" ]; then
+    if [ -d "$LIB/$name" ] && diff -rq "$LIB/$name" "$p" >/dev/null 2>&1; then echo "copy-synced"
+    else echo "local-dir"; fi
+  else echo "absent"; fi
+}
+
+cmd_list() {
+  local s state marks dest t
+  for s in $(ls "$LIB"); do
+    marks=""
+    for t in claude codex agents; do
+      dest="$(resolve_target "$t")/$s"
+      state=$(entry_state "$dest" "$s")
+      [ "$state" != "absent" ] && marks="$marks[$t:$state]"
+    done
+    printf '  %-36s %-40s %s\n' "$s" "$(desc_of "$s")…" "$marks"
+  done
+}
+
+cmd_sets() {
+  local f
+  for f in "$SETS"/*.txt; do
+    [ -e "$f" ] || { echo "(没有集合,在 sets/ 下建 <名字>.txt,一行一个 skill 名)"; return; }
+    echo "@$(basename "$f" .txt):"
+    grep -vE '^[[:space:]]*(#|$)' "$f" | sed 's/^/    /'
+  done
+}
+
+register_target() {
+  # 项目目录注册表:webui 的"使用情况"视图从这里知道有哪些项目在用技能
+  case "$1" in claude|codex|agents) return 0 ;; esac
+  local p="${1%%::*}"
+  local abs; abs=$(cd "$p" 2>/dev/null && pwd) || abs="$p"
+  grep -qxF "$abs" "$HUB/targets.txt" 2>/dev/null || echo "$abs" >> "$HUB/targets.txt"
+}
+
+cmd_enable() {
+  local copy=0 args=() a target dest s state
+  for a in "$@"; do [ "$a" = "--copy" ] && copy=1 || args+=("$a"); done
+  [ "${#args[@]}" -ge 2 ] || { usage; exit 1; }
+  target="${args[0]}"; dest=$(resolve_target "$target")
+  mkdir -p "$dest"
+  register_target "$target"
+  for s in $(expand_names "${args[@]:1}"); do
+    state=$(entry_state "$dest/$s" "$s")
+    case "$state" in
+      hub-link|broken-link|copy-synced) rm -rf "$dest/$s" ;;   # 本库管理的旧条目,可安全替换
+      absent) : ;;
+      *) echo "跳过 $s: $dest/$s 已存在且非本库管理($state),请先手动处理" >&2; continue ;;
+    esac
+    if [ "$copy" -eq 1 ]; then
+      cp -R "$LIB/$s" "$dest/$s"; echo "已复制: $dest/$s"
+    else
+      ln -s "$LIB/$s" "$dest/$s"; echo "已链接: $dest/$s -> \$HUB/library/$s"
+    fi
+  done
+}
+
+cmd_disable() {
+  local force=0 args=() a target dest s state
+  for a in "$@"; do [ "$a" = "--force" ] && force=1 || args+=("$a"); done
+  [ "${#args[@]}" -ge 2 ] || { usage; exit 1; }
+  target="${args[0]}"; dest=$(resolve_target "$target")
+  for s in $(expand_names "${args[@]:1}"); do
+    state=$(entry_state "$dest/$s" "$s")
+    case "$state" in
+      hub-link|broken-link|copy-synced) rm -rf "$dest/$s"; echo "已移除: $dest/$s" ;;
+      absent) echo "本就不存在: $dest/$s" ;;
+      copy-diverged|local-dir|foreign-link)
+        if [ "$force" -eq 1 ]; then rm -rf "$dest/$s"; echo "已强制移除($state): $dest/$s"
+        else echo "拒绝移除 $s: $dest/$s 有本地改动或非本库管理($state),确认丢弃请加 --force" >&2; fi ;;
+    esac
+  done
+}
+
+cmd_status() {
+  local targets=("$@") t dest e s state
+  [ "${#targets[@]}" -gt 0 ] || targets=(claude codex agents)
+  for t in "${targets[@]}"; do
+    dest=$(resolve_target "$t")
+    echo "== $t ($dest)"
+    [ -d "$dest" ] || { echo "    (目录不存在)"; continue; }
+    for e in "$dest"/*; do
+      [ -e "$e" ] || [ -L "$e" ] || continue
+      s=$(basename "$e")
+      state=$(entry_state "$e" "$s")
+      case "$state" in
+        hub-link)      printf '    %-36s 链接 -> 库(健康)\n' "$s" ;;
+        broken-link)   printf '    %-36s !! 失效链接(库里已删?)\n' "$s" ;;
+        foreign-link)  printf '    %-36s 链接 -> 库外: %s\n' "$s" "$(readlink "$e")" ;;
+        copy-synced)   printf '    %-36s 副本(与库一致)\n' "$s" ;;
+        local-dir)
+          if [ -d "$LIB/$s" ]; then printf '    %-36s !! 副本已偏离库(diff -r 查看)\n' "$s"
+          else printf '    %-36s 本地目录(未入库,可用 skillctl add 收编)\n' "$s"; fi ;;
+      esac
+    done
+  done
+}
+
+cmd_add() {
+  local linkback=0 args=() a src name
+  for a in "$@"; do [ "$a" = "--link-back" ] && linkback=1 || args+=("$a"); done
+  [ "${#args[@]}" -ge 1 ] || { usage; exit 1; }
+  for src in "${args[@]}"; do
+    src="${src%/}"
+    [ -f "$src/SKILL.md" ] || { echo "跳过 $src: 没有 SKILL.md,不是 skill" >&2; continue; }
+    name=$(basename "$src")
+    [ -d "$LIB/$name" ] && { echo "跳过 $name: 库里已有同名 skill,先对比处理" >&2; continue; }
+    mv "$src" "$LIB/$name"
+    echo "已入库: library/$name"
+    if [ "$linkback" -eq 1 ]; then ln -s "$LIB/$name" "$src"; echo "原地留链: $src -> 库"; fi
+  done
+}
+
+cmd_new() {
+  local name="${1:?用法: skillctl new <名字>}"
+  [ -d "$LIB/$name" ] && { echo "错误: library/$name 已存在" >&2; exit 1; }
+  mkdir -p "$LIB/$name"
+  cat > "$LIB/$name/SKILL.md" <<EOF
+---
+name: $name
+description: <一句话:做什么 + 什么时候用(触发词)>
+---
+
+# $name
+
+<正文>
+EOF
+  echo "已创建: $LIB/$name/SKILL.md(去补 description 和正文)"
+}
+
+cmd="${1:-}"; shift || true
+case "$cmd" in
+  list)    cmd_list ;;
+  sets)    cmd_sets ;;
+  enable)  cmd_enable "$@" ;;
+  disable) cmd_disable "$@" ;;
+  status)  cmd_status "$@" ;;
+  add)     cmd_add "$@" ;;
+  new)     cmd_new "$@" ;;
+  *)       usage; exit 1 ;;
+esac

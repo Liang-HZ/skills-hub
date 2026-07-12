@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Skills Hub · 技能库 — 一处管理所有 AI agent 技能</title>
+<meta name="description" content="开源、零依赖的本地技能管理器:把 Claude Code / Codex / 各项目的 skill 收进一个库,网页上统一开关、组合、更新。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%234655d4'/%3E%3Ctext x='50' y='72' font-size='60' text-anchor='middle' fill='%23fff'%3E✦%3C/text%3E%3C/svg%3E">
+<!-- Umami:在 analytics.liangai.org 建好站点后,把 data-website-id 换成真实 ID 并解除注释
+<script defer src="https://analytics.liangai.org/script.js" data-website-id="UMAMI_WEBSITE_ID"></script>
+-->
+<style>
+:root{
+  --bg:#f4f5f7;--card:#fff;--ink:#181f2a;--muted:#68717f;--faint:#98a0ac;
+  --line:#e4e7ec;--accent:#4655d4;--accent-soft:#eef0fd;--accent-ink:#3743ad;
+  --ok:#188945;--okbg:#e3f5ea;--r:16px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#101318;--card:#1b202a;--ink:#e8ebf1;--muted:#9aa4b2;--faint:#6b7482;
+  --line:#2a303c;--accent:#7d8cf8;--accent-soft:#232a4d;--accent-ink:#aab4ff;
+  --ok:#5fd08c;--okbg:#15301f;
+}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+font:16px/1.75 -apple-system,"PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif}
+.wrap{max-width:880px;margin:0 auto;padding:0 24px}
+a{color:var(--accent-ink)}
+
+header{padding:64px 0 24px;text-align:center}
+.logo{width:64px;height:64px;border-radius:18px;background:var(--accent);color:#fff;
+display:inline-flex;align-items:center;justify-content:center;font-size:34px}
+h1{font-size:34px;margin:18px 0 6px;letter-spacing:.3px}
+h1 .en{color:var(--faint);font-weight:500;font-size:20px}
+.tagline{font-size:18px;color:var(--muted);margin:0 auto;max-width:620px}
+.cta{display:flex;gap:12px;justify-content:center;margin:28px 0 8px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border-radius:12px;
+font-size:15px;font-weight:600;text-decoration:none;border:1px solid var(--line);
+background:var(--card);color:var(--ink)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn:hover{border-color:var(--accent)}
+.btn.primary:hover{opacity:.92}
+.meta{color:var(--faint);font-size:13px}
+
+.shot{margin:36px 0 8px}
+.shot img{width:100%;border-radius:var(--r);border:1px solid var(--line);
+box-shadow:0 18px 50px rgba(16,24,40,.12);display:block}
+
+pre.install{background:var(--card);border:1px solid var(--line);border-radius:12px;
+padding:16px 20px;font:14px/1.9 ui-monospace,Menlo,Consolas,monospace;overflow-x:auto;
+margin:26px 0 0;color:var(--ink)}
+pre.install .c{color:var(--faint)}
+
+section{margin:56px 0}
+h2{font-size:22px;margin:0 0 18px;text-align:center}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:720px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px 22px}
+.card h3{font-size:16px;margin:0 0 6px}
+.card p{margin:0;font-size:14px;color:var(--muted)}
+.card .ico{font-size:22px;display:block;margin-bottom:10px}
+
+.boundary{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+padding:26px 30px}
+.boundary h2{text-align:left;font-size:18px;margin-bottom:10px}
+.boundary ul{margin:0;padding-left:20px;color:var(--muted);font-size:14.5px}
+.boundary li{margin:6px 0}
+.boundary b{color:var(--ink)}
+
+.pill-demo{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:3px 12px;
+border-radius:99px;border:1.5px solid var(--ok);background:var(--okbg);color:var(--ok);font-weight:600}
+
+footer{border-top:1px solid var(--line);margin-top:70px;padding:28px 0 44px;
+text-align:center;color:var(--faint);font-size:13.5px}
+footer a{color:var(--muted);text-decoration:none;margin:0 10px}
+footer a:hover{color:var(--accent-ink)}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="logo">✦</div>
+    <h1>技能库 <span class="en">Skills Hub</span></h1>
+    <p class="tagline">一处管理所有 AI agent 技能。把 Claude Code、Codex、各项目的 skill 收进一个本地库,网页上统一开关 <span class="pill-demo">✓ Claude 全局</span>、组合、更新。</p>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/Liang-HZ/skills-hub" data-umami-event="github-click">GitHub 仓库 →</a>
+      <a class="btn" href="https://github.com/Liang-HZ/skills-hub#quick-start" data-umami-event="quickstart-click">快速开始</a>
+    </div>
+    <p class="meta">开源 · MIT · 零依赖(Python 标准库) · 纯本地,数据不出机器</p>
+    <pre class="install"><span class="c"># 三行跑起来(macOS / Linux / Windows)</span>
+git clone https://github.com/Liang-HZ/skills-hub.git
+cd skills-hub
+python3 webui.py   <span class="c"># 打开 http://127.0.0.1:7799</span></pre>
+  </header>
+
+  <div class="shot"><img src="screenshot.png" alt="Skills Hub 管理界面:技能卡片与各处启用开关"></div>
+
+  <section>
+    <h2>它解决什么问题</h2>
+    <div class="grid">
+      <div class="card"><span class="ico">🗂️</span><h3>一处管理,处处可用</h3>
+        <p>技能的唯一真源在本地库里,链接到 ~/.claude、~/.codex、~/.agents 或任意项目目录。改一处、处处生效;关掉开关只是摘链接,技能删不丢。</p></div>
+      <div class="card"><span class="ico">🧩</span><h3>组合一键开关</h3>
+        <p>把常一起用的技能存成一组,新项目一键开整组,收尾一键关掉。每次变更自动进本地 git 历史,步步可回退。</p></div>
+      <div class="card"><span class="ico">🔍</span><h3>第三方来源,主权在你</h3>
+        <p>别人的技能仓库先克隆进隔离区,挑着引入"当时内容的快照"。更新要两次明确授权:先检查看差异,拿到一次性令牌,再更新到你看过的那个版本。</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="boundary">
+      <h2>边界声明:它是管理器,不是安全扫描器</h2>
+      <ul>
+        <li>它<b>不判断技能是否安全</b>,不调用模型审核,永不执行技能自带的脚本、安装器、示例。</li>
+        <li>它<b>不自动下载任何东西</b>——所有联网动作(下载来源 / 检查更新 / 执行更新)都在明确标注"联网"的按钮后面,只在你点击时发生。</li>
+        <li>它把差异和来历摆给你看,<b>决定权在你</b>:第三方技能引入、开启前请自行阅读内容。</li>
+        <li>实现层防护:写 API 后端强制校验(loopback + 同源 + CSRF 令牌);管理器发起的 git 一律禁用 hook。</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <a href="https://github.com/Liang-HZ/skills-hub">GitHub</a>·
+    <a href="https://github.com/Liang-HZ/skills-hub/blob/main/README.zh-CN.md">中文文档</a>·
+    <a href="https://liangai.org">liangai.org</a>
+    <div style="margin-top:8px">MIT License · © 2026 Liang-HZ</div>
+  </footer>
+</div>
+
+</body>
+</html>

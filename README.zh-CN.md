@@ -4,6 +4,8 @@
 
 [English →](README.md)
 
+![Skills Hub 界面](docs/screenshot.png)
+
 所有技能(带 `SKILL.md` 的文件夹)的唯一真源放在本机的 `library/`,再链接到各个 agent 找技能的地方——Claude Code(`~/.claude/skills`)、Codex(`~/.codex/skills`)、通用 Agents(`~/.agents/skills`)或任意项目目录。改一处、处处生效;关掉开关只是摘链接,技能永远安全地留在库里。
 
 - **零依赖**——只用 Python 3.9+ 标准库。一个文件,一条命令。

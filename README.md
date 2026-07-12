@@ -4,6 +4,8 @@
 
 [中文文档 →](README.zh-CN.md)
 
+![Skills Hub UI](docs/screenshot.png)
+
 Skills Hub keeps every skill (a folder with a `SKILL.md`) in one local library and links it into wherever your agents look for skills — Claude Code (`~/.claude/skills`), Codex (`~/.codex/skills`), generic Agents (`~/.agents/skills`), or any project directory. Edit once, effective everywhere; delete a link, the skill stays safe in the library.
 
 - **Zero dependencies** — Python 3.9+ standard library only. One file, one command.

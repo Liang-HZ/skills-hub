@@ -4,7 +4,7 @@
 
 [中文文档 →](README.zh-CN.md)
 
-![Skills Hub UI](docs/screenshot.png)
+![Skills Hub UI](docs/screenshot-en.png)
 
 Skills Hub keeps every skill (a folder with a `SKILL.md`) in one local library and links it into wherever your agents look for skills — Claude Code (`~/.claude/skills`), Codex (`~/.codex/skills`), generic Agents (`~/.agents/skills`), or any project directory. Edit once, effective everywhere; delete a link, the skill stays safe in the library.
 
@@ -12,6 +12,7 @@ Skills Hub keeps every skill (a folder with a `SKILL.md`) in one local library a
 - **Local-first** — a loopback-only HTTP server (`127.0.0.1:7799`). Nothing leaves your machine.
 - **Cross-platform** — macOS / Linux (symlinks), Windows (symlink → junction → copy fallback).
 - **Everything is undoable** — every change is committed to a local git history; deletes go to a trash folder, never `rm -rf`.
+- **Bilingual UI** — auto-detects Chinese/English from your browser, switch anytime from the top-right corner.
 
 ## Quick start
 
@@ -34,7 +35,7 @@ The UI needs three sentences to understand:
 
 | Tab | What you do there |
 |-----|-------------------|
-| Skills | Create, edit, import, adopt stray skills found on your machine; toggle where each one is enabled |
+| Skills | Create, edit, import, adopt stray skills found on your machine (native directory picker or type a path); toggle where each one is enabled |
 | Sets | Group skills you always use together; enable/disable a whole set in one click |
 | Usage | See what's enabled where (global roots and every project), clean up dead projects |
 | Sources | Clone third-party skill repos into an isolated `vendor/` area, cherry-pick skills as snapshots, and update them manually |

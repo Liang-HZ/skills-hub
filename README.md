@@ -8,7 +8,7 @@
 
 Skills Hub keeps every skill (a folder with a `SKILL.md`) in one local library and links it into wherever your agents look for skills — Claude Code (`~/.claude/skills`), Codex (`~/.codex/skills`), generic Agents (`~/.agents/skills`), or any project directory. Edit once, effective everywhere; delete a link, the skill stays safe in the library.
 
-- **Zero Python dependencies** - Python 3.9+ standard library only. One file, one command. Git is required (for change history); the app shows an install guide if it is missing.
+- **Single-file, no npm/pip install** - Python 3.9+ and Git are the only requirements. One file, one command.
 - **Local-first** — a loopback-only HTTP server (`127.0.0.1:7799`). Nothing leaves your machine.
 - **Cross-platform** — macOS / Linux (symlinks), Windows (symlink → junction → copy fallback).
 - **Everything is undoable** — every change is committed to a local git history; deletes go to a trash folder, never `rm -rf`.

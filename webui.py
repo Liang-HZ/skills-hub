@@ -1219,7 +1219,11 @@ const esc=s=>(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&q
 const base=p=>p.split(/[\\/]/).filter(Boolean).pop();
 const TOKEN="__CSRF__";
 let S=null, TAB=localStorage.getItem("tab")||"skills", FILTER="all", ED=null, SE_ORIG=null;
-let LANG=localStorage.getItem("lang")||"zh";
+let LANG=localStorage.getItem("lang")||detectLang();
+function detectLang(){
+  const bl=(navigator.language||navigator.languages?.[0]||"").toLowerCase();
+  return bl.startsWith("en")?"en":"zh";
+}
 
 const I18N={
 zh:{
@@ -1478,7 +1482,6 @@ function renderNav(){
     `<button class="${TAB===id?'active':''}" onclick="show('${id}')">${ICONS[id]}${label}${extra}</button>`).join("");
   let sf=S.platform==="darwin"
     ?`<div class="st ${S.autostart?'on':''}">${S.autostart?t('autostart_on'):t('autostart_off')}</div>`:"";
-  sf+=`<div style="margin-top:8px"><button class="ghost" style="font-size:11px;padding:2px 10px" onclick="toggleLang()">${t('lang_switch')}</button></div>`;
   $("#sidefoot").innerHTML=sf;
 }
 
@@ -1691,6 +1694,15 @@ function render(){
   renderNav();
   $("#page").innerHTML={skills:pageSkills,sets:pageSets,usage:pageUsage,sources:pageSources,
                         settings:pageSettings}[TAB]();
+  // 语言切换按钮:注入到每个页面顶部 pagehead 右侧
+  let acts=document.querySelector(".pagehead .acts");
+  if(!acts){const ph=document.querySelector(".pagehead");if(ph){acts=document.createElement("span");acts.className="acts";ph.appendChild(acts)}}
+  if(acts&&!acts.querySelector(".lang-toggle")){
+    const b=document.createElement("button");b.className="ghost lang-toggle";
+    b.style.cssText="font-size:12px;padding:4px 12px;font-weight:600";
+    b.textContent=t('lang_switch');b.onclick=toggleLang;
+    acts.appendChild(b);
+  }
   applyI18n();
 }
 

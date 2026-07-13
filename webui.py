@@ -1938,6 +1938,161 @@ def ensure_hub():
         git_commit("初始化技能库")
 
 
+# ---------- Git 缺失时的引导页(自包含,不依赖正常启动流程) ----------
+
+def git_available():
+    """检查系统是否安装了 git。"""
+    try:
+        subprocess.run(["git", "--version"], capture_output=True, timeout=5)
+        return True
+    except (FileNotFoundError, OSError):
+        return False
+
+
+GIT_MISSING_PAGE = r"""<!doctype html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Skills Hub - 需要 Git</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%23c22f2f'/%3E%3Ctext x='50' y='72' font-size='60' text-anchor='middle' fill='%23fff'%3E✦%3C/text%3E%3C/svg%3E">
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--ink:#181f2a;--muted:#68717f;--line:#e4e7ec;
+--accent:#4655d4;--accent-soft:#eef0fd;--bad:#c22f2f;--badbg:#fde7e7;--ok:#188945;--okbg:#e3f5ea;--r:14px;--rs:9px}
+@media(prefers-color-scheme:dark){:root{--bg:#101318;--card:#1b202a;--ink:#e8ebf1;--muted:#9aa4b2;--line:#2a303c;--accent:#7d8cf8;--accent-soft:#232a4d;--bad:#f27b7b;--badbg:#3d1a1a;--ok:#5fd08c;--okbg:#15301f}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.65 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.box{max-width:620px;width:100%}
+.logo{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.logo .ic{width:40px;height:40px;border-radius:11px;background:var(--bad);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;flex:none}
+.logo b{font-size:19px}.logo .sub{font-size:12px;color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:24px 26px;margin-bottom:16px}
+.alert{background:var(--badbg);color:var(--bad);border-radius:var(--rs);padding:10px 15px;font-size:14px;margin-bottom:16px}
+h2{font-size:15px;margin:0 0 8px}
+.hint{color:var(--muted);font-size:13px;line-height:1.8}
+code{background:rgba(0,0,0,.08);border-radius:4px;padding:1px 6px;font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+@media(prefers-color-scheme:dark){code{background:rgba(255,255,255,.1)}}
+.prompt-box{background:var(--bg);border:1px solid var(--line);border-radius:var(--rs);padding:14px 16px;margin-top:10px;position:relative}
+.prompt-box pre{margin:0;white-space:pre-wrap;word-break:break-word;font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.btn-row{display:flex;gap:10px;margin-top:18px}
+button{font:inherit;font-size:14px;padding:9px 18px;border-radius:var(--rs);border:1px solid var(--line);
+background:var(--card);color:var(--ink);cursor:pointer;transition:border-color .12s}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+button.ghost{background:none}
+.ok-msg{background:var(--okbg);color:var(--ok);border-radius:var(--rs);padding:12px 16px;margin-top:12px;display:none}
+.ok-msg.show{display:block}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);
+padding:10px 22px;border-radius:12px;font-size:14px;opacity:0;transition:.25s;pointer-events:none}
+.toast.show{opacity:.95}
+.tabs{display:flex;gap:0;margin-top:12px;border-bottom:1px solid var(--line)}
+.tab{padding:8px 16px;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted);font-size:13px}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+.tab-content{display:none;padding-top:12px}.tab-content.active{display:block}
+</style></head><body>
+<div class="box">
+  <div class="logo"><div class="ic">✦</div><div><b>Skills Hub</b><div class="sub">一处管理 · 处处可用</div></div></div>
+  <div class="card">
+    <div class="alert">⚠ Skills Hub 需要 Git 才能运行。检测到系统未安装 Git。</div>
+    <p class="hint">Skills Hub 用 Git 记录技能的每次变更(新增、编辑、删除),这是你的回滚路径。没有 Git,管理台无法启动。</p>
+
+    <h2 style="margin-top:18px">安装 Git</h2>
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('mac')">macOS</div>
+      <div class="tab" onclick="switchTab('win')">Windows</div>
+    </div>
+    <div id="tab-mac" class="tab-content active">
+      <div class="hint">任选一种方式:</div>
+      <div class="prompt-box"><pre>brew install git</pre></div>
+      <div class="hint" style="margin:8px 0">或者(安装 Xcode Command Line Tools,含 Git):</div>
+      <div class="prompt-box"><pre>xcode-select --install</pre></div>
+    </div>
+    <div id="tab-win" class="tab-content">
+      <div class="hint">任选一种方式:</div>
+      <div class="prompt-box"><pre>winget install Git.Git</pre></div>
+      <div class="hint" style="margin:8px 0">或者从官网下载安装包:</div>
+      <div class="prompt-box"><pre>https://git-scm.com/download/win</pre></div>
+    </div>
+
+    <h2 style="margin-top:20px">让 AI 帮你安装</h2>
+    <div class="hint">把下面的 prompt 复制给你的 AI agent,它会检测平台并自动安装:</div>
+    <div class="prompt-box">
+      <pre>帮我安装 Git。先检测操作系统(macOS 或 Windows),然后用合适的方式安装(brew install git / xcode-select --install / winget install Git.Git)。安装完成后运行 git --version 确认安装成功。</pre>
+      <button class="ghost" style="position:absolute;top:8px;right:8px;font-size:12px;padding:4px 10px" onclick="copyPrompt()">复制</button>
+    </div>
+
+    <div class="ok-msg" id="okMsg">✓ Git 已安装!请点击下方「重启管理台」,或重新双击启动脚本。</div>
+    <div class="btn-row">
+      <button class="primary" onclick="recheck()">已安装,重新检查</button>
+      <button class="ghost" onclick="recheck()">重启管理台</button>
+      <button class="ghost" onclick="exitApp()" style="margin-left:auto">退出</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+function switchTab(t){document.querySelectorAll('.tab').forEach((e,i)=>e.classList.toggle('active',i===(t==='mac'?0:1)));
+  document.getElementById('tab-mac').classList.toggle('active',t==='mac');
+  document.getElementById('tab-win').classList.toggle('active',t==='win')}
+function copyPrompt(){const t=document.querySelector('.prompt-box pre').textContent;
+  navigator.clipboard.writeText(t).then(()=>showToast('已复制到剪贴板')).catch(()=>showToast('复制失败,请手动选中复制'))}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500)}
+async function recheck(){
+  const r=await fetch('/api/recheck').then(r=>r.json()).catch(()=>({git:false}));
+  if(r.git){document.getElementById('okMsg').classList.add('show');
+    showToast('Git 已检测到!正在重启…');setTimeout(()=>location.reload(),2000)}
+  else{showToast('仍未检测到 Git,请先安装')}}
+async function exitApp(){await fetch('/api/exit').catch(()=>{});showToast('正在退出…');setTimeout(()=>window.close(),1000)}
+</script>
+</body></html>
+"""
+
+
+class GitMissingHandler(BaseHTTPRequestHandler):
+    """Git 缺失时的最小 Handler:只服务引导页和 recheck/exit 两个只读 API。"""
+    def log_message(self, *a):
+        pass
+
+    def do_GET(self):
+        if self.path == "/" or self.path == "":
+            body = GIT_MISSING_PAGE.encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        elif self.path == "/api/recheck":
+            self._json({"git": git_available()})
+        elif self.path == "/api/exit":
+            self._json({"ok": True})
+            threading.Timer(0.3, os._exit, args=[0]).start()
+        else:
+            self.send_response(404)
+            self.end_headers()
+
+    def _json(self, obj, code=200):
+        body = json.dumps(obj).encode()
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+
+def serve_git_missing(port=PORT, open_browser=True):
+    """Git 未安装时启动的最小服务:只展示安装引导页,不调 ensure_hub、不需要 Git。"""
+    try:
+        srv = ThreadingHTTPServer(("127.0.0.1", port), GitMissingHandler)
+    except OSError:
+        print(f"端口 {port} 已被占用,管理台可能已在运行(无 Git 模式)。")
+        return None
+    print(f"⚠ Git 未安装,展示安装引导页: http://127.0.0.1:{port}")
+    print("安装 Git 后重启管理台。")
+    if open_browser:
+        threading.Timer(0.6, webbrowser.open, args=[f"http://127.0.0.1:{port}"]).start()
+    return srv
+
+
 def serve(port=PORT, open_browser=True):
     global SERVER_PORT
     os.chdir(HUB)
@@ -1960,6 +2115,16 @@ def main():
     port = PORT
     if "--port" in sys.argv:
         port = int(sys.argv[sys.argv.index("--port") + 1])
+    # Git 是硬依赖:没有 Git 时不进 ensure_hub,启动最小引导页服务
+    if not git_available():
+        srv = serve_git_missing(port, open_browser="--no-open" not in sys.argv)
+        if srv is None:
+            return
+        try:
+            srv.serve_forever()
+        except KeyboardInterrupt:
+            pass
+        return
     srv = serve(port, open_browser="--no-open" not in sys.argv)
     if srv is None:
         return

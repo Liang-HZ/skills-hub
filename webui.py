@@ -1151,7 +1151,7 @@ border-top-color:transparent;border-radius:50%;animation:sp 1s linear infinite;v
 </style></head><body>
 
 <aside class="side">
-  <div class="brand"><div class="logo">✦</div><div><b>技能库</b><span class="sub">一处管理 · 处处可用</span></div></div>
+  <div class="brand"><div class="logo">✦</div><div><b data-i18n="app_name">技能库</b><span class="sub" data-i18n="app_sub">一处管理 · 处处可用</span></div></div>
   <nav class="nav" id="nav"></nav>
   <div class="sidefoot" id="sidefoot"></div>
 </aside>
@@ -1163,9 +1163,9 @@ border-top-color:transparent;border-radius:50%;animation:sp 1s linear infinite;v
   <textarea id="edBody" style="height:56vh" spellcheck="false"></textarea>
   <div class="row" style="justify-content:flex-end;margin-top:12px">
     <span class="hint" id="edHint" style="margin-right:auto"></span>
-    <button class="ghost" id="edOpen" title="打开这个技能的文件夹,放脚本等其他文件" onclick="post('/api/open',{name:ED.name})">打开目录</button>
-    <button onclick="editor.close()">取消</button>
-    <button class="primary" id="edSave" onclick="saveEditor()">保存</button>
+    <button class="ghost" id="edOpen" data-i18n-title="t_open_dir" data-i18n="ed_open_skill" onclick="post('/api/open',{name:ED.name})">打开目录</button>
+    <button data-i18n="ed_cancel" onclick="editor.close()">取消</button>
+    <button class="primary" id="edSave" data-i18n="ed_save" onclick="saveEditor()">保存</button>
   </div>
 </dialog>
 
@@ -1174,40 +1174,40 @@ border-top-color:transparent;border-radius:50%;animation:sp 1s linear infinite;v
   <div class="hint" id="askHint" style="margin-bottom:10px"></div>
   <div id="askBody"></div>
   <div class="row" style="justify-content:flex-end;margin-top:14px">
-    <button onclick="ask.close()">取消</button>
-    <button class="primary" id="askOk">确定</button>
+    <button data-i18n="ask_cancel" onclick="ask.close()">取消</button>
+    <button class="primary" id="askOk" data-i18n="ask_ok">确定</button>
   </div>
 </dialog>
 
 <dialog id="diff">
-  <h2 id="diffTitle">差异</h2>
-  <div class="hint" style="margin-bottom:8px">左 <code>library/</code>=库(真源),右=该放置点副本。<span class="df-add">绿行</span>=库里有的, <span class="df-del">红行</span>=副本独有的改动。</div>
+  <h2 id="diffTitle" data-i18n="diff_title">差异</h2>
+  <div class="hint" id="diffHint" style="margin-bottom:8px" data-i18n="diff_hint">左 library/=库(真源),右=该放置点副本。绿行=库里有的, 红行=副本独有的改动。</div>
   <pre id="diffBody" class="diff-pre"></pre>
   <div class="row" style="justify-content:flex-end;margin-top:12px">
-    <button onclick="diff.close()">关闭</button>
-    <button class="primary" id="diffRelink">收回为软链接</button>
+    <button data-i18n="diff_close" onclick="diff.close()">关闭</button>
+    <button class="primary" id="diffRelink" data-i18n="diff_relink">收回为软链接</button>
   </div>
 </dialog>
 
 <dialog id="setEditor">
-  <h2 id="seTitle">组合</h2>
+  <h2 id="seTitle" data-i18n="nav_sets">组合</h2>
   <div class="row" style="gap:8px;margin-bottom:4px">
-    <label class="hint" style="white-space:nowrap">组合名</label>
-    <input type="text" id="setName" style="flex:1" placeholder="my-set(小写字母、数字、连字符)">
+    <label class="hint" style="white-space:nowrap" data-i18n="se_name_label">组合名</label>
+    <input type="text" id="setName" style="flex:1" data-i18n-ph="se_ph" placeholder="my-set(小写字母、数字、连字符)">
   </div>
-  <div class="hint" style="margin-bottom:8px">勾选要放进这组的技能;悬浮卡片可看完整说明。</div>
+  <div class="hint" style="margin-bottom:8px" data-i18n="se_hint">勾选要放进这组的技能;悬浮卡片可看完整说明。</div>
   <div class="skgrid" id="seCards" style="max-height:52vh;overflow-y:auto;align-content:start"></div>
   <div class="row" style="justify-content:flex-end;margin-top:12px">
-    <button onclick="setEditor.close()">取消</button>
-    <button class="primary" onclick="saveSetEditor()">保存</button>
+    <button data-i18n="se_cancel" onclick="setEditor.close()">取消</button>
+    <button class="primary" data-i18n="se_save" onclick="saveSetEditor()">保存</button>
   </div>
 </dialog>
 
 <dialog id="srcCheck">
-  <h2 id="srcChkTitle">检查更新</h2>
+  <h2 id="srcChkTitle" data-i18n="t_check_update">检查更新</h2>
   <div id="srcChkBody" style="min-height:60px"></div>
   <div class="row" style="justify-content:flex-end;margin-top:12px">
-    <button onclick="srcCheck.close()">关闭</button>
+    <button data-i18n="sc_close" onclick="srcCheck.close()">关闭</button>
   </div>
 </dialog>
 
@@ -1219,6 +1219,199 @@ const esc=s=>(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&q
 const base=p=>p.split(/[\\/]/).filter(Boolean).pop();
 const TOKEN="__CSRF__";
 let S=null, TAB=localStorage.getItem("tab")||"skills", FILTER="all", ED=null, SE_ORIG=null;
+let LANG=localStorage.getItem("lang")||"zh";
+
+const I18N={
+zh:{
+app_name:"技能库",app_sub:"一处管理 · 处处可用",
+nav_skills:"技能",nav_sets:"组合",nav_usage:"使用情况",nav_sources:"网上来源",nav_settings:"设置",
+autostart_on:"管理台常驻 运行中",autostart_off:"管理台常驻 未注册",lang_switch:"EN",
+// 技能页
+h_skills:"技能",sub_skills:"技能保存在库里,删不丢、改全生效。开关拨绿 = 在那个地方能用。",
+btn_open_lib:"打开库目录",btn_scan:"扫描收编",btn_import:"导入目录",btn_add_online:"从网上添加",btn_new_skill:"＋ 新建技能",
+ph_search:"搜技能名或描述…",chip_all:"全部",chip_own:"自建",chip_ext:"网上引入",
+empty_skills:"没有匹配的技能",no_desc:"还没写 description",
+pill_claude:"Claude 全局",pill_codex:"Codex 全局",pill_agents:"Agents 全局",pill_add_proj:"＋ 项目",
+t_edit:"编辑",t_view:"查看",t_check_update:"检查上游更新",t_fork:"转为独立副本,以后可编辑,不再跟随来源",t_delete:"删除",
+t_open_dir:"打开这个技能的文件夹,放脚本等其他文件",t_open_dir_btn:"打开目录",
+t_add_proj_title:"在某个项目目录里单独启用",
+// 警告
+w_diverged:"独立副本内容已和库里不同",w_view_diff:"查看差异",w_relink:"收回为软链接",
+// onboard
+ob_title:"三句话看懂这个页面",ob_1:"① 你所有的 AI 技能都保存在这台电脑的技能库里,删不丢、改全生效。",
+ob_2:"② 每个技能下面有一排开关,拨绿 = 在那里能用,再点一下就关。",
+ob_3:"③ 网上来源的下载、检查更新、合入更新都只在你点击时发生;本工具只负责管理,不验证第三方内容的安全性,引入前请自行阅读。",
+ob_gotit:"知道了,不再显示",
+// 组合页
+h_sets:"组合",sub_sets:"把常一起用的技能存成一组,一键开到某个地方、一键关掉。组合只是清单,不影响技能本身。",
+btn_new_set:"＋ 新建组合",n_skills:"个技能",btn_apply:"开启到…",btn_close:"关闭…",btn_edit:"编辑",btn_delete:"删除",
+empty_sets:"还没有组合。把常一起用的技能建一组,以后一键开关。",empty_set_hint:"(空组合,点「编辑」加技能)",
+set_missing:"库里没有这个技能",
+// 使用情况页
+h_usage:"使用情况",sub_usage:"每个地方各自开了哪些技能。全局 = 所有会话都能用;项目 = 只在那个目录里能用。",
+btn_clean:"清理失效项目",h_global:"全局",h_projects:"各项目",n_places:"处",ph_search_proj:"搜项目…",
+empty_proj_new:"还没有项目在用技能。在「技能」页点某个技能的「＋ 项目」即可。",empty_proj_match:"没有匹配的项目",
+use_n_skills:"个技能",use_no_skill:"这里没开任何技能",use_pick:"＋ 开启技能",use_close_title:"点击在这里关闭",
+cc_claude:"Claude Code(全局)",cc_codex:"Codex(全局)",cc_agents:"Agents(通用,全局)",
+stale_proj:"失效项目(目录已不存在):",
+// 来源页
+h_sources:"网上来源",
+sub_sources:"别人的技能仓库先下载到本机隔离目录,挑着引入;引入的是当时内容的快照。下载、检查更新、合入更新都只在你点击时发生。",
+sub_sources_b:"本工具只负责管理,不验证第三方内容的安全性--引入或更新前请自行阅读内容。",
+h_add_repo:"添加技能仓库",btn_download:"下载来源(联网)",btn_check_remote:"检查远端更新(联网)",
+btn_remove_src:"移除来源",btn_expand:"展开",btn_collapse:"收起",skill_list_suffix:"技能列表",
+n_imported:"已引入",local_dir:"(本地目录)",empty_src:"还没有添加任何来源。粘贴一个技能仓库地址试试。",
+empty_src_skills:"这个仓库里没找到技能",
+imp_ref:"引入 · 跟随更新",imp_copy:"引入 · 独立副本",
+imp_ref_title:"以后可在你手动检查、确认后跟进上游更新",imp_copy_title:"复制一份归自己,与来源脱钩",
+tag_imported_ref:"跟随更新",tag_imported_copy:"独立副本",tag_imported_prefix:"已引入为",
+// 设置页
+h_settings:"设置",h_behavior:"行为",clean_empty_label:"从项目移除技能后,若 .claude/.codex/.agents 目录已空则一并删掉(保持项目干净;全局目录永不动)",
+h_boundary:"本工具的边界",
+bnd_1:"· 只管理技能的存储、来源、组合与启用位置,不执行技能内容,不自动下载任何东西。",
+bnd_2:"· 所有联网动作(下载来源 / 检查更新 / 执行更新)都只在你点击对应按钮时发生。",
+bnd_3:"· 不验证第三方技能的内容;引入、开启前请自行阅读。",
+h_service:"后台服务",svc_on:"● 管理台常驻(开机自启):运行中",svc_off:"○ 管理台常驻(开机自启):未注册(见 README 配置)",
+// dialog 通用
+cancel:"取消",save:"保存",ok:"确定",close:"关闭",confirm_btn:"确定",
+// editor dialog
+ed_open_skill:"打开目录",ed_save:"保存",ed_cancel:"取消",
+// ask dialog
+ask_cancel:"取消",ask_ok:"确定",
+// diff dialog
+diff_title:"差异",diff_hint:"左 library/=库(真源),右=该放置点副本。绿行=库里有的, 红行=副本独有的改动。",
+diff_close:"关闭",diff_relink:"收回为软链接",
+// setEditor dialog
+se_name_label:"组合名",se_hint:"勾选要放进这组的技能;悬浮卡片可看完整说明。",se_cancel:"取消",se_save:"保存",
+se_ph:"my-set(小写字母、数字、连字符)",
+// srcCheck dialog
+sc_close:"关闭",
+// JS 动态消息
+m_new_skill_t:"新建技能",m_new_skill_h:"名字只能用小写字母、数字、连字符。页面只编辑 SKILL.md;脚本等其他文件建好后用「打开目录」放进技能文件夹。",
+m_scan_toast:"正在扫描本机 .claude/.codex/.agents…",m_scan_none:"没有发现库外的技能,都已在库里了",
+m_scan_t:"发现 COUNT 个库外技能",m_scan_h:"勾选要收进库的,点确定。收编 = 移进库、原位置留引用,用法不变;之后就能统一开关。",
+m_import_t:"从目录导入技能",m_import_h:"支持单个技能目录(内有 SKILL.md),或装着多个技能子目录的文件夹。只认 SKILL.md 这一个标准,其余文件原样保留;导入是复制,原目录不动。",
+m_import_find:"查找技能",m_import_empty:"这个目录里没找到带 SKILL.md 的技能",
+m_imp_ph:"/Users/you/Downloads/xxx-skills",
+m_addproj_t:"在某个项目里用「SKILL」",m_addproj_h:"输入项目目录的完整路径,并选择放进哪个目录;这个技能将只对该项目生效",
+m_addproj_ph:"/Users/you/my-project",
+m_pick_t:"在「LABEL」开启技能",m_pick_h:"点一个立即开启",m_pick_open:"开启",m_pick_empty:"所有技能都已在这里开启",
+m_apply_t:"ACT 组合「NAME」",m_apply_h:"选择作用位置:从下面选一个,或在下方填自定义项目目录",
+m_apply_sel:"选择已注册的位置",m_apply_custom:"或填一个自定义项目目录(留空则用上面选的)",
+m_del_skill:"确定删除「NAME」?自建技能会进回收站(不真删),网上引入的只是撤掉快照。",
+m_del_set:"删除组合「NAME」?只删清单,技能本身不受影响。",
+m_relink_c:"把「NAME」在 WHERE 的独立副本收回为软链接(跟随库)?\n\n库内容视为真源。副本里的本地改动会备份到 attic/trash(不真删),之后该处跟随库。",
+m_remove_src_c:"移除来源「NAME」?已转为独立副本的技能不受影响。",
+m_remove_blocked:"⚠ 还有 COUNT 个\"跟随更新\"的技能引用此来源,无法删除来源仓库(它们还需要仓库做检查更新):",
+m_remove_fork:"转副本",m_remove_fork_hint:"转副本后即可删除来源",m_remove_toast:"来源被跟随更新的技能引用,无法删除(见卡片内提示)",
+m_remove_hint:"已引入的技能在「技能」页用「检查更新」跟进上游。",
+m_dl_ing:"下载中…",m_chk_remote_t:"检查更新 · NAME",m_chk_ing:"正在联网检查远端…",m_chk_fail:"检查失败",
+m_chk_latest:"✓ 已是最新",m_chk_behind:"远端有 COUNT 个新提交(目标版本 VER)",
+m_chk_affect:"影响 COUNT 个跟随更新的技能(NAMES)。先看下面的提交列表和受影响文件,确认后再更新;更新只会前进到上面这个版本。",
+m_chk_update_btn:"更新已关联技能到该版本",m_sync_ing:"正在同步快照…",m_sync_done:"✓ 更新完成",
+m_diff_ing:"正在比较…",m_diff_fail:"读取失败",m_diff_none:"(无差异)",
+m_diff_title:"差异:NAME",
+m_ed_ref:"查看 NAME",m_ed_edit:"编辑 NAME",
+m_ed_hint_ref:"跟随更新的技能只读;想改就先「转为我的副本」",m_ed_hint_own:"这里只编辑 SKILL.md;脚本等其他文件用「打开目录」放进去。保存即处处生效",
+m_se_edit:"编辑组合",m_se_new:"新建组合",m_se_empty:"库里还没有技能",
+m_se_name_err:"组合名只能用小写字母、数字、连字符",m_se_dup:"组合「NAME」已存在,换一个名字或用编辑改它",
+m_no_desc_i:"还没写 description",
+m_row_conflict:"库里已有同名,跳过",m_row_invalid:"名字须小写字母/数字/连字符,改名后再来",
+m_proj_label:"项目",m_empty_count:"处",
+radio_claude:".claude(Claude Code)",radio_codex:".codex(Codex)",radio_agents:".agents(通用)"
+},
+en:{
+app_name:"Skills Hub",app_sub:"Manage once · Use everywhere",
+nav_skills:"Skills",nav_sets:"Sets",nav_usage:"Usage",nav_sources:"Sources",nav_settings:"Settings",
+autostart_on:"Service: Running",autostart_off:"Service: Not registered",lang_switch:"中文",
+h_skills:"Skills",sub_skills:"Skills live in the library. Toggle green = available there. Changes propagate everywhere.",
+btn_open_lib:"Open Library",btn_scan:"Scan Local",btn_import:"Import Dir",btn_add_online:"Add Online",btn_new_skill:"＋ New Skill",
+ph_search:"Search name or description…",chip_all:"All",chip_own:"Own",chip_ext:"Imported",
+empty_skills:"No matching skills",no_desc:"No description yet",
+pill_claude:"Claude Global",pill_codex:"Codex Global",pill_agents:"Agents Global",pill_add_proj:"＋ Project",
+t_edit:"Edit",t_view:"View",t_check_update:"Check upstream for updates",t_fork:"Convert to standalone copy (editable, no longer follows source)",t_delete:"Delete",
+t_open_dir:"Open this skill's folder to add scripts and other files",t_open_dir_btn:"Open Dir",
+t_add_proj_title:"Enable in a specific project directory",
+w_diverged:"standalone copies differ from library",w_view_diff:"View diff",w_relink:"Relink to library",
+ob_title:"This page in 3 sentences",ob_1:"① All your AI skills are stored locally on this machine. Changes propagate everywhere.",
+ob_2:"② Each skill has a row of toggles. Green = enabled there. Click again to disable.",
+ob_3:"③ Downloads, update checks, and merges only happen when you click. This tool manages only — it does not vet third-party content. Read before importing.",
+ob_gotit:"Got it, don't show again",
+h_sets:"Sets",sub_sets:"Group skills you use together. Toggle a set on/off to a location. Sets are just lists — they don't modify skills.",
+btn_new_set:"＋ New Set",n_skills:"skills",btn_apply:"Apply to…",btn_close:"Remove from…",btn_edit:"Edit",btn_delete:"Delete",
+empty_sets:"No sets yet. Group skills you use together for one-click toggling.",empty_set_hint:"(empty set, click Edit to add skills)",
+set_missing:"This skill is not in the library",
+h_usage:"Usage",sub_usage:"Which skills are enabled where. Global = all sessions; Project = that directory only.",
+btn_clean:"Clean Stale Projects",h_global:"Global",h_projects:"Projects",n_places:"places",ph_search_proj:"Search projects…",
+empty_proj_new:"No projects using skills yet. Click ＋ Project on a skill in the Skills page.",empty_proj_match:"No matching projects",
+use_n_skills:"skills",use_no_skill:"No skills enabled here",use_pick:"＋ Enable Skill",use_close_title:"Click to disable here",
+cc_claude:"Claude Code (global)",cc_codex:"Codex (global)",cc_agents:"Agents (general, global)",
+stale_proj:"Stale projects (directory no longer exists): ",
+h_sources:"Online Sources",
+sub_sources:"Clone skill repos to an isolated local directory, then pick skills to import. Imports are snapshots of the current version. Downloads and updates only happen when you click.",
+sub_sources_b:"This tool manages only — it does not vet third-party content. Read before importing or updating.",
+h_add_repo:"Add Skill Repository",btn_download:"Download (online)",btn_check_remote:"Check Remote Updates (online)",
+btn_remove_src:"Remove Source",btn_expand:"Expand",btn_collapse:"Collapse",skill_list_suffix:"skill list",
+n_imported:"imported",local_dir:"(local directory)",empty_src:"No sources added yet. Paste a skill repo URL to try.",
+empty_src_skills:"No skills found in this repo",
+imp_ref:"Import · Follow Updates",imp_copy:"Import · Standalone Copy",
+imp_ref_title:"Manually check and follow upstream updates later",imp_copy_title:"Copy as your own, detached from upstream",
+tag_imported_ref:"Follow Updates",tag_imported_copy:"Standalone Copy",tag_imported_prefix:"Imported as",
+h_settings:"Settings",h_behavior:"Behavior",clean_empty_label:"After removing a skill from a project, delete empty .claude/.codex/.agents dirs (keeps projects clean; global dirs are never touched)",
+h_boundary:"Boundaries",
+bnd_1:"· Only manages skill storage, sources, sets, and enable locations. Does not execute skill content or auto-download anything.",
+bnd_2:"· All network actions (download / check updates / apply updates) only happen when you click the corresponding button.",
+bnd_3:"· Does not vet third-party skill content. Read before importing or enabling.",
+h_service:"Background Service",svc_on:"● Service (auto-start): Running",svc_off:"○ Service (auto-start): Not registered (see README)",
+cancel:"Cancel",save:"Save",ok:"OK",close:"Close",confirm_btn:"OK",
+ed_open_skill:"Open Dir",ed_save:"Save",ed_cancel:"Cancel",
+ask_cancel:"Cancel",ask_ok:"OK",
+diff_title:"Diff",diff_hint:"Left library/=source of truth, right=copy at this location. Green=library-only, Red=copy-only changes.",
+diff_close:"Close",diff_relink:"Relink to Library",
+se_name_label:"Set name",se_hint:"Check skills to include in this set. Hover a card for full description.",se_cancel:"Cancel",se_save:"Save",
+se_ph:"my-set (lowercase, digits, hyphens)",
+sc_close:"Close",
+m_new_skill_t:"New Skill",m_new_skill_h:"Name must be lowercase, digits, hyphens. Only SKILL.md is edited here; add scripts and other files via Open Dir.",
+m_scan_toast:"Scanning local .claude/.codex/.agents…",m_scan_none:"No unmanaged skills found — all are already in the library",
+m_scan_t:"Found COUNT unmanaged skills",m_scan_h:"Check the ones to adopt. Adopt = move into library, leave a link at the original location. Usage unchanged.",
+m_import_t:"Import from Directory",m_import_h:"Supports a single skill directory (with SKILL.md) or a folder of skill subdirectories. Only SKILL.md is recognized; other files are preserved as-is. Import copies — original is untouched.",
+m_import_find:"Find Skills",m_import_empty:"No skills with SKILL.md found in this directory",
+m_imp_ph:"/Users/you/Downloads/xxx-skills",
+m_addproj_t:"Enable \"SKILL\" in a Project",m_addproj_h:"Enter the full project directory path and choose which folder. The skill will only be available in that project.",
+m_addproj_ph:"/Users/you/my-project",
+m_pick_t:"Enable Skill in \"LABEL\"",m_pick_h:"Click one to enable immediately",m_pick_open:"Enable",m_pick_empty:"All skills are already enabled here",
+m_apply_t:"ACT set \"NAME\"",m_apply_h:"Choose a target: pick from the list below, or enter a custom project directory",
+m_apply_sel:"Select a registered location",m_apply_custom:"Or enter a custom project directory (leave empty to use the selection above)",
+m_del_skill:"Delete \"NAME\"? Own skills go to trash (not permanently deleted). Imported skills just drop the snapshot.",
+m_del_set:"Delete set \"NAME\"? Only the list is removed; skills are unaffected.",
+m_relink_c:"Relink the standalone copy of \"NAME\" at WHERE to the library (follow library)?\n\nLibrary content is the source of truth. Local changes in the copy will be backed up to attic/trash (not deleted).",
+m_remove_src_c:"Remove source \"NAME\"? Skills already converted to standalone copies are unaffected.",
+m_remove_blocked:"⚠ COUNT \"Follow Updates\" skill(s) still reference this source — cannot delete (they need the repo for update checks):",
+m_remove_fork:"Make Copy",m_remove_fork_hint:"Convert to copy, then you can delete the source",m_remove_toast:"Source is referenced by follow-update skills — cannot delete (see card hint)",
+m_remove_hint:"Imported skills can check for updates from the Skills page.",
+m_dl_ing:"Downloading…",m_chk_remote_t:"Check Updates · NAME",m_chk_ing:"Checking remote…",m_chk_fail:"Check failed",
+m_chk_latest:"✓ Up to date",m_chk_behind:"Remote has COUNT new commit(s) (target version VER)",
+m_chk_affect:"Affects COUNT follow-update skill(s): NAMES. Review the commits and affected files below before updating. Update only advances to the version shown above.",
+m_chk_update_btn:"Update Followed Skills to This Version",m_sync_ing:"Syncing snapshot…",m_sync_done:"✓ Update complete",
+m_diff_ing:"Comparing…",m_diff_fail:"Read failed",m_diff_none:"(no differences)",
+m_diff_title:"Diff: NAME",
+m_ed_ref:"View NAME",m_ed_edit:"Edit NAME",
+m_ed_hint_ref:"Follow-update skill is read-only. Convert to standalone copy to edit.",m_ed_hint_own:"Only SKILL.md is edited here. Use Open Dir for scripts and other files. Changes propagate everywhere.",
+m_se_edit:"Edit Set",m_se_new:"New Set",m_se_empty:"No skills in the library yet",
+m_se_name_err:"Set name must be lowercase, digits, hyphens",m_se_dup:"Set \"NAME\" already exists — use Edit to modify it",
+m_no_desc_i:"No description yet",
+m_row_conflict:"Name exists in library, skipped",m_row_invalid:"Name must be lowercase/digits/hyphens",
+m_proj_label:"Project",m_empty_count:"places",
+radio_claude:".claude (Claude Code)",radio_codex:".codex (Codex)",radio_agents:".agents (general)"
+}};
+function t(k){return (I18N[LANG]&&I18N[LANG][k])||I18N.zh[k]||k}
+function tf(k,vars){let s=t(k);if(vars)for(const[k2,v]of Object.entries(vars))s=s.replace(k2,v);return s}
+function applyI18n(){
+  document.querySelectorAll('[data-i18n]').forEach(e=>e.textContent=t(e.dataset.i18n));
+  document.querySelectorAll('[data-i18n-ph]').forEach(e=>e.placeholder=t(e.dataset.i18nPh));
+  document.querySelectorAll('[data-i18n-title]').forEach(e=>e.title=t(e.dataset.i18nTitle));
+}
+function toggleLang(){LANG=LANG==="zh"?"en":"zh";localStorage.setItem("lang",LANG);render();applyI18n()}
 
 function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");
   clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("show"),3600)}
@@ -1248,19 +1441,22 @@ function sourceUrl(name){
   return m?`https://${m[1]}/${m[2]}`:u;
 }
 function originTag(o){
-  if(!o||o.type==="own")return `<span class="tag src-own">自建</span>`;
+  if(!o||o.type==="own")return `<span class="tag src-own">${t('chip_own')}</span>`;
   const url=o.source?sourceUrl(o.source):"";
   const name=esc(trunc(o.source||"",12));
   const link=url?`<a class="src-link" href="${esc(url)}" target="_blank" rel="noopener" title="${esc(o.source||"")}">${name}</a>`:`<span>${name}</span>`;
-  if(o.type==="ref")return `<span class="tag src-ref" title="跟随更新 · 内容是引入时的快照,可手动跟进上游">${'⇅'} ${link}</span>`;
-  return `<span class="tag src-copy" title="独立副本 · 从来源复制后已与上游脱钩,归你所有">${'⧉'} ${link}</span>`;
+  if(o.type==="ref")return `<span class="tag src-ref" title="${t('tag_imported_ref')}">${'⇅'} ${link}</span>`;
+  return `<span class="tag src-copy" title="${t('tag_imported_copy')}">${'⧉'} ${link}</span>`;
 }
 function pill(skill,target,label,state,title){
+  const offLabel=LANG==='en'?'Click to disable':'点击关闭';
+  const onLabel=LANG==='en'?'Click to enable':'点击开启';
   if(state==="hub-link"||state==="copy-synced")
-    return `<span class="pill on" title="点击关闭 · ${esc(title)}" onclick="toggle('${esc(target)}','${skill}',false)">${esc(label)}</span>`;
+    return `<span class="pill on" title="${offLabel} · ${esc(title)}" onclick="toggle('${esc(target)}','${skill}',false)">${esc(label)}</span>`;
   if(state==="absent")
-    return `<span class="pill" title="点击开启 · ${esc(title)}" onclick="toggle('${esc(target)}','${skill}',true)">${esc(label)}</span>`;
-  return `<span class="pill warn" title="${state}:这一处不归本库管,见顶部提示">${esc(label)} ⚠</span>`;
+    return `<span class="pill" title="${onLabel} · ${esc(title)}" onclick="toggle('${esc(target)}','${skill}',true)">${esc(label)}</span>`;
+  const warnTitle=LANG==='en'?'Not managed by this library - see top notice':'这一处不归本库管,见顶部提示';
+  return `<span class="pill warn" title="${state}: ${warnTitle}">${esc(label)} ⚠</span>`;
 }
 
 /* ---------- 侧边栏 ---------- */
@@ -1273,33 +1469,33 @@ settings:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-widt
 
 function renderNav(){
   const items=[
-    ["skills","技能",`<span class="cnt">${S.skills.length}</span>`],
-    ["sets","组合",`<span class="cnt">${Object.keys(S.sets).length||""}</span>`],
-    ["usage","使用情况",""],
-    ["sources","网上来源",""],
-    ["settings","设置",""]];
+    ["skills",t('nav_skills'),`<span class="cnt">${S.skills.length}</span>`],
+    ["sets",t('nav_sets'),`<span class="cnt">${Object.keys(S.sets).length||""}</span>`],
+    ["usage",t('nav_usage'),""],
+    ["sources",t('nav_sources'),""],
+    ["settings",t('nav_settings'),""]];
   $("#nav").innerHTML=items.map(([id,label,extra])=>
     `<button class="${TAB===id?'active':''}" onclick="show('${id}')">${ICONS[id]}${label}${extra}</button>`).join("");
-  $("#sidefoot").innerHTML=S.platform==="darwin"
-    ?`<div class="st ${S.autostart?'on':''}">管理台常驻 ${S.autostart?"运行中":"未注册"}</div>`:"";
+  let sf=S.platform==="darwin"
+    ?`<div class="st ${S.autostart?'on':''}">${S.autostart?t('autostart_on'):t('autostart_off')}</div>`:"";
+  sf+=`<div style="margin-top:8px"><button class="ghost" style="font-size:11px;padding:2px 10px" onclick="toggleLang()">${t('lang_switch')}</button></div>`;
+  $("#sidefoot").innerHTML=sf;
 }
 
 /* ---------- 技能页 ---------- */
 function warningsHtml(){
-  // 普通警告照旧;对"独立副本内容已和库里不同"这一类,额外渲染可点击的技能名。
-  const plain = S.warnings.filter(w => !w.includes("独立副本内容已和库里不同"));
+  const plain = S.warnings.filter(w => !w.includes("独立副本内容已和库里不同") && !w.includes("standalone copies differ"));
   let html = plain.map(w=>`<div class="warnbox">⚠ ${esc(w)}</div>`).join("");
   if(S.divergences && S.divergences.length){
-    // 按来源(label)分组展示
     const byLabel = {};
     for(const d of S.divergences){ (byLabel[d.label]=byLabel[d.label]||[]).push(d); }
     for(const [label, ds] of Object.entries(byLabel)){
       const items = ds.map(d=>
         `<span class="dv-item">${esc(d.name)}
-           <a class="dv-link" onclick="showDiff('${esc(d.name)}','${esc(d.target)}')">查看差异</a>
-           <a class="dv-link" onclick="relink('${esc(d.name)}','${esc(d.target)}','${esc(label)}')">收回为软链接</a>
+           <a class="dv-link" onclick="showDiff('${esc(d.name)}','${esc(d.target)}')">${t('w_view_diff')}</a>
+           <a class="dv-link" onclick="relink('${esc(d.name)}','${esc(d.target)}','${esc(label)}')">${t('w_relink')}</a>
          </span>`).join("");
-      html += `<div class="warnbox">⚠ ${esc(label)} 有 ${ds.length} 个独立副本内容已和库里不同:${items}</div>`;
+      html += `<div class="warnbox">⚠ ${esc(label)} ${LANG==='en'?'has':'有'} ${ds.length} ${t('w_diverged')}${LANG==='en'?'':':'}${items}</div>`;
     }
   }
   return html;
@@ -1323,35 +1519,35 @@ function skillCards(){
     return `<div class="skcard">
       <div class="sk-head"><span class="sk-name" title="${k.name}">${k.name}</span>${originTag(k.origin)}
         <span class="sk-acts">
-          <button class="ghost" title="${isRef?"查看":"编辑"}" onclick="editSkill('${k.name}')">✍</button>
-          ${isRef?`<button class="ghost" title="检查上游更新" onclick="checkSource('${esc(k.origin.source)}')">↻</button>`:""}
-          ${isRef?`<button class="ghost" title="转为独立副本,以后可编辑,不再跟随来源" onclick="post('/api/source/fork',{name:'${k.name}'})">⧉</button>`:""}
-          <button class="ghost danger" title="删除" onclick="delSkill('${k.name}')">✕</button></span></div>
-      <div class="sk-desc" title="${esc(k.desc)}">${esc(k.desc)||'<i>还没写 description</i>'}</div>
+          <button class="ghost" title="${isRef?t('t_view'):t('t_edit')}" onclick="editSkill('${k.name}')">✍</button>
+          ${isRef?`<button class="ghost" title="${t('t_check_update')}" onclick="checkSource('${esc(k.origin.source)}')">↻</button>`:""}
+          ${isRef?`<button class="ghost" title="${t('t_fork')}" onclick="post('/api/source/fork',{name:'${k.name}'})">⧉</button>`:""}
+          <button class="ghost danger" title="${t('t_delete')}" onclick="delSkill('${k.name}')">✕</button></span></div>
+      <div class="sk-desc" title="${esc(k.desc)}">${esc(k.desc)||`<i>${t('m_no_desc_i')}</i>`}</div>
       <div class="pills">
-        ${pill(k.name,"claude","Claude 全局",k.places.claude,"~/.claude/skills")}
-        ${pill(k.name,"codex","Codex 全局",k.places.codex,"~/.codex/skills")}
-        ${S.agents_root||k.places.agents!=="absent"?pill(k.name,"agents","Agents 全局",k.places.agents,"~/.agents/skills"):""}
+        ${pill(k.name,"claude",t('pill_claude'),k.places.claude,"~/.claude/skills")}
+        ${pill(k.name,"codex",t('pill_codex'),k.places.codex,"~/.codex/skills")}
+        ${S.agents_root||k.places.agents!=="absent"?pill(k.name,"agents",t('pill_agents'),k.places.agents,"~/.agents/skills"):""}
         ${projPills}
-        <span class="pill add" title="在某个项目目录里单独启用" onclick="addProject('${k.name}')">＋ 项目</span>
-      </div></div>`}).join("")||`<div class="empty" style="grid-column:1/-1">没有匹配的技能</div>`;
+        <span class="pill add" title="${t('t_add_proj_title')}" onclick="addProject('${k.name}')">${t('pill_add_proj')}</span>
+      </div></div>`}).join("")||`<div class="empty" style="grid-column:1/-1">${t('empty_skills')}</div>`;
 }
 function pageSkills(){
-  const chips=[["all","全部"],["own","自建"],["ext","网上引入"]];
+  const chips=[["all",t('chip_all')],["own",t('chip_own')],["ext",t('chip_ext')]];
   return `
-  <div class="pagehead"><h1>技能</h1>
+  <div class="pagehead"><h1>${t('h_skills')}</h1>
     <span class="acts">
-      <button class="ghost" title="打开技能库目录(library/)" onclick="post('/api/open',{})">打开库目录</button>
-      <button title="扫描本机 .claude/.codex/.agents 里还没进库的技能" onclick="scanLocal()">扫描收编</button>
-      <button title="从任意文件夹导入技能目录(复制进库)" onclick="importDialog()">导入目录</button>
-      <button onclick="show('sources')">从网上添加</button>
-      <button class="primary" onclick="newSkill()">＋ 新建技能</button></span>
-    <span class="sub">技能保存在库里,删不丢、改全生效。开关拨绿 = 在那个地方能用。</span>
+      <button class="ghost" title="${t('btn_open_lib')}" onclick="post('/api/open',{})">${t('btn_open_lib')}</button>
+      <button onclick="scanLocal()">${t('btn_scan')}</button>
+      <button onclick="importDialog()">${t('btn_import')}</button>
+      <button onclick="show('sources')">${t('btn_add_online')}</button>
+      <button class="primary" onclick="newSkill()">${t('btn_new_skill')}</button></span>
+    <span class="sub">${t('sub_skills')}</span>
   </div>
   ${onboard()}
   ${warningsHtml()}
   <div class="row" style="margin-top:14px">
-    <input type="text" id="search" placeholder="搜技能名或描述…" style="width:260px"
+    <input type="text" id="search" placeholder="${t('ph_search')}" style="width:260px"
       value="${esc(window._kw||"")}" oninput="window._kw=this.value;$('#sklist').innerHTML=skillCards()">
     <span class="chips" style="margin:0">${chips.map(([id,l])=>
       `<span class="chip ${FILTER===id?'active':''}" onclick="FILTER='${id}';render()">${l}</span>`).join("")}</span>
@@ -1362,132 +1558,129 @@ function pageSkills(){
 /* ---------- 组合页 ---------- */
 function pageSets(){
   return `
-  <div class="pagehead"><h1>组合</h1>
-    <span class="acts"><button class="primary" onclick="newSet()">＋ 新建组合</button></span>
-    <span class="sub">把常一起用的技能存成一组,一键开到某个地方、一键关掉。组合只是清单,不影响技能本身。</span></div>
+  <div class="pagehead"><h1>${t('h_sets')}</h1>
+    <span class="acts"><button class="primary" onclick="newSet()">${t('btn_new_set')}</button></span>
+    <span class="sub">${t('sub_sets')}</span></div>
   ${Object.entries(S.sets).map(([n,list])=>`<div class="card">
     <div class="row" style="justify-content:space-between">
-      <h2 style="margin:0">${esc(n)} <span class="hint" style="font-weight:400">${list.length} 个技能</span></h2>
+      <h2 style="margin:0">${esc(n)} <span class="hint" style="font-weight:400">${list.length} ${t('n_skills')}</span></h2>
       <span class="row">
-        <button onclick="applySet('${esc(n)}',true)">开启到…</button>
-        <button class="ghost" onclick="applySet('${esc(n)}',false)">关闭…</button>
-        <button class="ghost" onclick="editSet('${esc(n)}')">编辑</button>
-        <button class="ghost danger" onclick="delSet('${esc(n)}')">删除</button></span></div>
+        <button onclick="applySet('${esc(n)}',true)">${t('btn_apply')}</button>
+        <button class="ghost" onclick="applySet('${esc(n)}',false)">${t('btn_close')}</button>
+        <button class="ghost" onclick="editSet('${esc(n)}')">${t('btn_edit')}</button>
+        <button class="ghost danger" onclick="delSet('${esc(n)}')">${t('btn_delete')}</button></span></div>
     <div class="pills" style="margin-top:8px">${list.map(s=>{
       const k=S.skills.find(x=>x.name===s);
-      return `<span class="tag ${k?"":"miss"}" title="${k?esc(k.desc):"库里没有这个技能"}">${esc(s)}${k?"":" ?"}</span>`}).join("")
-      ||'<span class="hint">(空组合,点「编辑」加技能)</span>'}</div>
-  </div>`).join("")||`<div class="empty">还没有组合。把常一起用的技能建一组,以后一键开关。</div>`}`;
+      return `<span class="tag ${k?"":"miss"}" title="${k?esc(k.desc):t('set_missing')}">${esc(s)}${k?"":" ?"}</span>`}).join("")
+      ||`<span class="hint">${t('empty_set_hint')}</span>`}</div>
+  </div>`).join("")||`<div class="empty">${t('empty_sets')}</div>`}`;
 }
 async function delSet(n){
-  if(confirm("删除组合「"+n+"」?只删清单,技能本身不受影响。"))
+  if(confirm(tf('m_del_set',{NAME:n})))
     await post("/api/set-delete",{name:n});
 }
 function onboard(){
   if(localStorage.getItem("onboarded4"))return "";
-  return `<div class="banner"><b>三句话看懂这个页面</b>
-  ① 你所有的 AI 技能都保存在这台电脑的技能库里,删不丢、改全生效。
-  ② 每个技能下面有一排开关,拨绿 = 在那里能用,再点一下就关。
-  ③ 网上来源的下载、检查更新、合入更新都只在你点击时发生;本工具只负责管理,不验证第三方内容的安全性,引入前请自行阅读。
-  <a href="#" onclick="localStorage.setItem('onboarded4','1');render();return false">知道了,不再显示</a></div>`;
+  return `<div class="banner"><b>${t('ob_title')}</b>
+  ${t('ob_1')}<br>${t('ob_2')}<br>${t('ob_3')}
+  <a href="#" onclick="localStorage.setItem('onboarded4','1');render();return false">${t('ob_gotit')}</a></div>`;
 }
 
 /* ---------- 使用情况页 ---------- */
 function useCard(icon,label,path,target,get){
   const used=S.skills.filter(k=>{const st=get(k);return st&&st!=="absent"});
   return `<div class="usecard">
-    <h3><span class="loc-ico">${icon}</span>${esc(label)}<span class="n">${used.length} 个技能</span></h3>
+    <h3><span class="loc-ico">${icon}</span>${esc(label)}<span class="n">${used.length} ${t('use_n_skills')}</span></h3>
     <div class="path">${esc(path)}</div>
-    <div class="pills">${used.map(k=>pill(k.name,target,k.name,get(k),"点击在这里关闭")).join("")||'<span class="hint">这里没开任何技能</span>'}
-      <span class="pill add" onclick="pickSkill('${esc(target)}','${esc(label)}')">＋ 开启技能</span></div></div>`;
+    <div class="pills">${used.map(k=>pill(k.name,target,k.name,get(k),t('use_close_title'))).join("")||`<span class="hint">${t('use_no_skill')}</span>`}
+      <span class="pill add" onclick="pickSkill('${esc(target)}','${esc(label)}')">${t('use_pick')}</span></div></div>`;
 }
 function projCards(){
   const q=(window._pq||"").toLowerCase();
   const pts=S.proj_targets.filter(t=>t.path.toLowerCase().includes(q));
   return pts.map(t=>useCard("📁",projLabel(t.target),t.path+"/."+t.kind+"/skills",
     t.target,k=>k.places.projects[t.target])).join("")
-    ||`<div class="empty" style="grid-column:1/-1">${q?"没有匹配的项目":"还没有项目在用技能。在「技能」页点某个技能的「＋ 项目」即可。"}</div>`;
+    ||`<div class="empty" style="grid-column:1/-1">${q?t('empty_proj_match'):t('empty_proj_new')}</div>`;
 }
 function pageUsage(){
   return `
-  <div class="pagehead"><h1>使用情况</h1>
-    <span class="acts"><button onclick="post('/api/targets/clean',{})">清理失效项目</button></span>
-    <span class="sub">每个地方各自开了哪些技能。全局 = 所有会话都能用;项目 = 只在那个目录里能用。</span></div>
-  <h2 style="font-size:13px;color:var(--muted);margin:18px 0 0">全局</h2>
+  <div class="pagehead"><h1>${t('h_usage')}</h1>
+    <span class="acts"><button onclick="post('/api/targets/clean',{})">${t('btn_clean')}</button></span>
+    <span class="sub">${t('sub_usage')}</span></div>
+  <h2 style="font-size:13px;color:var(--muted);margin:18px 0 0">${t('h_global')}</h2>
   <div class="usegrid">
-    ${useCard("C","Claude Code(全局)","~/.claude/skills","claude",k=>k.places.claude)}
-    ${useCard("X","Codex(全局)","~/.codex/skills","codex",k=>k.places.codex)}
-    ${S.agents_root?useCard("A","Agents(通用,全局)","~/.agents/skills","agents",k=>k.places.agents):""}
+    ${useCard("C",t('cc_claude'),"~/.claude/skills","claude",k=>k.places.claude)}
+    ${useCard("X",t('cc_codex'),"~/.codex/skills","codex",k=>k.places.codex)}
+    ${S.agents_root?useCard("A",t('cc_agents'),"~/.agents/skills","agents",k=>k.places.agents):""}
   </div>
   <div class="row" style="margin:20px 0 0">
-    <h2 style="font-size:13px;color:var(--muted);margin:0">各项目 <span class="hint" style="font-weight:400">${S.proj_targets.length} 处</span></h2>
-    ${S.proj_targets.length>4?`<input type="text" id="projq" placeholder="搜项目…" style="width:180px;margin-left:auto"
+    <h2 style="font-size:13px;color:var(--muted);margin:0">${t('h_projects')} <span class="hint" style="font-weight:400">${S.proj_targets.length} ${t('n_places')}</span></h2>
+    ${S.proj_targets.length>4?`<input type="text" id="projq" placeholder="${t('ph_search_proj')}" style="width:180px;margin-left:auto"
       value="${esc(window._pq||"")}" oninput="window._pq=this.value;$('#projgrid').innerHTML=projCards()">`:""}
   </div>
   <div class="usegrid" id="projgrid">${projCards()}</div>
-  ${S.stale_targets.length?`<div class="warnbox">失效项目(目录已不存在):${S.stale_targets.map(esc).join("、")}</div>`:""}`;
+  ${S.stale_targets.length?`<div class="warnbox">${t('stale_proj')}${S.stale_targets.map(esc).join("、")}</div>`:""}`;
 }
 
 /* ---------- 来源页 ---------- */
 let SRC_COLLAPSED={};   // 来源名 -> 是否收起技能列表
 function pageSources(){
   return `
-  <div class="pagehead"><h1>网上来源</h1>
-    <span class="sub">别人的技能仓库先下载到本机隔离目录,挑着引入;引入的是当时内容的快照。下载、检查更新、合入更新都只在你点击时发生。<b>本工具只负责管理,不验证第三方内容的安全性--引入或更新前请自行阅读内容。</b></span></div>
+  <div class="pagehead"><h1>${t('h_sources')}</h1>
+    <span class="sub">${t('sub_sources')}<b>${t('sub_sources_b')}</b></span></div>
   <div class="card">
-    <h2>添加技能仓库</h2>
+    <h2>${t('h_add_repo')}</h2>
     <div class="row" style="margin-top:8px">
       <input type="text" id="srcUrl" placeholder="https://github.com/xxx/skills.git" style="flex:1;min-width:260px">
-      <button class="primary" id="srcAddBtn" onclick="addSource()">下载来源(联网)</button></div></div>
+      <button class="primary" id="srcAddBtn" onclick="addSource()">${t('btn_download')}</button></div></div>
   ${S.sources.map(s=>{
     const hasImp=s.skills.some(k=>k.imported_as);
-    // 引入过的来源默认收起(除非用户手动展开过)
     const collapsed=SRC_COLLAPSED[s.name]!==undefined?SRC_COLLAPSED[s.name]:hasImp;
     return `<div class="card">
     <div class="row" style="justify-content:space-between">
-      <h2 style="margin:0">${esc(s.name)} <span class="hint" style="font-weight:400">${s.skills.length} 个技能${hasImp?` · ${s.skills.filter(k=>k.imported_as).length} 已引入`:""}</span></h2>
-      <span class="row">${s.is_git?`<button class="ghost" onclick="checkSource('${s.name}')">检查远端更新(联网)</button>`:""}
-        <button class="ghost" onclick="toggleSrcList('${s.name}')" id="tog-${s.name}">${collapsed?"展开":"收起"}技能列表</button>
-        <button class="ghost danger" onclick="removeSource('${s.name}')">移除来源</button></span></div>
-    <div class="hint mono">${esc(s.url||"(本地目录)")} · ${esc(s.head)}</div>
+      <h2 style="margin:0">${esc(s.name)} <span class="hint" style="font-weight:400">${s.skills.length} ${t('n_skills').replace('skills','skill(s)')}${hasImp?` · ${s.skills.filter(k=>k.imported_as).length} ${t('n_imported')}`:""}</span></h2>
+      <span class="row">${s.is_git?`<button class="ghost" onclick="checkSource('${s.name}')">${t('btn_check_remote')}</button>`:""}
+        <button class="ghost" onclick="toggleSrcList('${s.name}')" id="tog-${s.name}">${collapsed?t('btn_expand'):t('btn_collapse')}${t('skill_list_suffix')}</button>
+        <button class="ghost danger" onclick="removeSource('${s.name}')">${t('btn_remove_src')}</button></span></div>
+    <div class="hint mono">${esc(s.url||t('local_dir'))} · ${esc(s.head)}</div>
     <div id="chk-${s.name}"></div>
     <div id="list-${s.name}" style="margin-top:8px;${collapsed?"display:none":""}">${s.skills.map(k=>`<div class="srcskill">
       <b>${esc(k.name)}</b><span class="hint" style="flex:1">${esc(k.desc)}</span>
-      ${k.imported_as?`<span class="tag done">已引入为 ${k.imported_as}(${k.imported_type==="ref"?"跟随更新":"独立副本"})</span>`
-        :`<button class="ghost" onclick="importSkill('${s.name}','${esc(k.subpath)}','ref')" title="以后可在你手动检查、确认后跟进上游更新">引入 · 跟随更新</button>
-          <button class="ghost" onclick="importSkill('${s.name}','${esc(k.subpath)}','copy')" title="复制一份归自己,与来源脱钩">引入 · 独立副本</button>`}
-    </div>`).join("")||'<span class="hint">这个仓库里没找到技能</span>'}</div></div>`}).join("")
-  ||`<div class="empty">还没有添加任何来源。粘贴一个技能仓库地址试试。</div>`}`;
+      ${k.imported_as?`<span class="tag done">${t('tag_imported_prefix')} ${k.imported_as}(${k.imported_type==="ref"?t('tag_imported_ref'):t('tag_imported_copy')})</span>`
+        :`<button class="ghost" onclick="importSkill('${s.name}','${esc(k.subpath)}','ref')" title="${t('imp_ref_title')}">${t('imp_ref')}</button>
+          <button class="ghost" onclick="importSkill('${s.name}','${esc(k.subpath)}','copy')" title="${t('imp_copy_title')}">${t('imp_copy')}</button>`}
+    </div>`).join("")||`<span class="hint">${t('empty_src_skills')}</span>`}</div></div>`}).join("")
+  ||`<div class="empty">${t('empty_src')}</div>`}`;
 }
 function toggleSrcList(name){
   const list=$("#list-"+name),tog=$("#tog-"+name);
   const now=list.style.display==="none";
   list.style.display=now?"":"none";
-  tog.textContent=(now?"展开":"收起")+"技能列表";
+  tog.textContent=(now?t('btn_expand'):t('btn_collapse'))+t('skill_list_suffix');
   SRC_COLLAPSED[name]=!now;
 }
 
 /* ---------- 设置页 ---------- */
 function pageSettings(){
   return `
-  <div class="pagehead"><h1>设置</h1></div>
+  <div class="pagehead"><h1>${t('h_settings')}</h1></div>
   <div class="card">
-    <h2>行为</h2>
+    <h2>${t('h_behavior')}</h2>
     <label class="hint" style="display:block;margin-top:6px"><input type="checkbox" id="cleanEmpty" ${S.clean_empty_dirs?"checked":""}
       onchange="post('/api/settings',{clean_empty_dirs:this.checked})">
-      从项目移除技能后,若 .claude/.codex/.agents 目录已空则一并删掉(保持项目干净;全局目录永不动)</label>
+      ${t('clean_empty_label')}</label>
   </div>
   <div class="card">
-    <h2>本工具的边界</h2>
+    <h2>${t('h_boundary')}</h2>
     <div class="hint" style="line-height:2">
-      · 只管理技能的存储、来源、组合与启用位置,不执行技能内容,不自动下载任何东西。<br>
-      · 所有联网动作(下载来源 / 检查更新 / 执行更新)都只在你点击对应按钮时发生。<br>
-      · 不验证第三方技能的内容;引入、开启前请自行阅读。</div>
+      ${t('bnd_1')}<br>
+      ${t('bnd_2')}<br>
+      ${t('bnd_3')}</div>
   </div>
   ${S.platform==="darwin"?`<div class="card">
-    <h2>后台服务</h2>
+    <h2>${t('h_service')}</h2>
     <div class="hint" style="line-height:2.2">
-      ${S.autostart?"●":"○"} 管理台常驻(开机自启):${S.autostart?"运行中":"未注册(见 README 配置)"}
+      ${S.autostart?t('svc_on'):t('svc_off')}
     </div>
   </div>`:""}`;
 }
@@ -1498,6 +1691,7 @@ function render(){
   renderNav();
   $("#page").innerHTML={skills:pageSkills,sets:pageSets,usage:pageUsage,sources:pageSources,
                         settings:pageSettings}[TAB]();
+  applyI18n();
 }
 
 /* ---------- 交互 ---------- */
@@ -1508,12 +1702,12 @@ function askDialog(title,hint,bodyHtml,onOk){
   $("#askBody").innerHTML=bodyHtml;$("#askOk").onclick=async()=>{await onOk();ask.close()};
   ask.showModal();
 }
-function newSkill(){askDialog("新建技能","名字只能用小写字母、数字、连字符。页面只编辑 SKILL.md;脚本等其他文件建好后用「打开目录」放进技能文件夹。",
+function newSkill(){askDialog(t('m_new_skill_t'),t('m_new_skill_h'),
   `<input type="text" id="askIn" style="width:100%" placeholder="my-skill">`,
   async()=>{const n=$("#askIn").value.trim();if(!n)return;
     const j=await post("/api/new",{name:n});if(j.ok)editSkill(n)})}
-function checkRow(f,extra){ // 扫描/导入结果里的一行(带勾选框)
-  const bad=f.conflict?"库里已有同名,跳过":!f.valid?"名字须小写字母/数字/连字符,改名后再来":"";
+function checkRow(f,extra){
+  const bad=f.conflict?t('m_row_conflict'):!f.valid?t('m_row_invalid'):"";
   return `<label class="srcskill" style="cursor:${bad?"default":"pointer"}">
     <input type="checkbox" data-p="${esc(f.path)}" ${bad?"disabled":"checked"}>
     <b>${esc(f.name)}</b><span class="hint" style="flex:1">${esc(extra||"")}</span>
@@ -1521,18 +1715,18 @@ function checkRow(f,extra){ // 扫描/导入结果里的一行(带勾选框)
 }
 function checkedPaths(sel){return [...document.querySelectorAll(sel+' input:checked')].map(x=>x.dataset.p)}
 async function scanLocal(){
-  toast("正在扫描本机 .claude/.codex/.agents…");
+  toast(t('m_scan_toast'));
   const r=await post("/api/scan",{});
   const list=r.found||[];
-  if(!list.length){toast("没有发现库外的技能,都已在库里了");return}
-  askDialog(`发现 ${list.length} 个库外技能`,"勾选要收进库的,点确定。收编 = 移进库、原位置留引用,用法不变;之后就能统一开关。",
+  if(!list.length){toast(t('m_scan_none'));return}
+  askDialog(tf('m_scan_t',{COUNT:list.length}),t('m_scan_h'),
     list.map(f=>checkRow(f,f.place)).join(""),
     async()=>{const ps=checkedPaths("#askBody");if(ps.length)await post("/api/adopt-bulk",{paths:ps})});
 }
 function importDialog(){
-  askDialog("从目录导入技能","支持单个技能目录(内有 SKILL.md),或装着多个技能子目录的文件夹。只认 SKILL.md 这一个标准,其余文件原样保留;导入是复制,原目录不动。",
-   `<div class="row"><input type="text" id="impPath" style="flex:1;min-width:0" placeholder="/Users/you/Downloads/xxx-skills">
-    <button onclick="impProbe()">查找技能</button></div><div id="impList" style="margin-top:8px"></div>`,
+  askDialog(t('m_import_t'),t('m_import_h'),
+   `<div class="row"><input type="text" id="impPath" style="flex:1;min-width:0" placeholder="${t('m_imp_ph')}">
+    <button onclick="impProbe()">${t('m_import_find')}</button></div><div id="impList" style="margin-top:8px"></div>`,
    async()=>{const ps=checkedPaths("#impList");if(ps.length)await post("/api/import",{paths:ps})});
 }
 async function impProbe(){
@@ -1540,17 +1734,17 @@ async function impProbe(){
   const r=await post("/api/import",{path:p,probe:true});
   if(!r.ok)return;
   $("#impList").innerHTML=(r.found||[]).map(f=>checkRow(f,f.desc)).join("")
-    ||'<div class="empty">这个目录里没找到带 SKILL.md 的技能</div>';
+    ||`<div class="empty">${t('m_import_empty')}</div>`;
 }
 function addProject(skill){
   const opts=S.projects.map(p=>`<option value="${esc(p)}">`).join("");
-  askDialog("在某个项目里用「"+skill+"」","输入项目目录的完整路径,并选择放进哪个目录;这个技能将只对该项目生效",
-  `<input type="text" id="askIn" list="projList" style="width:100%" placeholder="/Users/you/my-project">
+  askDialog(tf('m_addproj_t',{SKILL:skill}),t('m_addproj_h'),
+  `<input type="text" id="askIn" list="projList" style="width:100%" placeholder="${t('m_addproj_ph')}">
    <datalist id="projList">${opts}</datalist>
    <div class="row" style="margin-top:10px">
-     <label class="hint"><input type="radio" name="pkind" value="claude" checked> .claude(Claude Code)</label>
-     <label class="hint"><input type="radio" name="pkind" value="codex"> .codex(Codex)</label>
-     <label class="hint"><input type="radio" name="pkind" value="agents"> .agents(通用)</label>
+     <label class="hint"><input type="radio" name="pkind" value="claude" checked> ${t('radio_claude')}</label>
+     <label class="hint"><input type="radio" name="pkind" value="codex"> ${t('radio_codex')}</label>
+     <label class="hint"><input type="radio" name="pkind" value="agents"> ${t('radio_agents')}</label>
    </div>`,
   async()=>{const p=$("#askIn").value.trim();if(!p)return;
     const kind=document.querySelector('input[name=pkind]:checked').value;
@@ -1559,29 +1753,29 @@ function pickSkill(target,label){
   const here=S.skills.filter(k=>{
     const st=["claude","codex","agents"].includes(target)?k.places[target]:(k.places.projects[target]||"absent");
     return st==="absent"});
-  askDialog("在「"+label+"」开启技能","点一个立即开启",
+  askDialog(tf('m_pick_t',{LABEL:label}),t('m_pick_h'),
     here.map(k=>`<div class="srcskill"><b>${k.name}</b><span class="hint" style="flex:1">${esc(k.desc).slice(0,60)}</span>
-      <button class="ghost" onclick="toggle('${esc(target)}','${k.name}',true).then(()=>ask.close())">开启</button></div>`).join("")
-    ||'<div class="empty">所有技能都已在这里开启</div>',
+      <button class="ghost" onclick="toggle('${esc(target)}','${k.name}',true).then(()=>ask.close())">${t('m_pick_open')}</button></div>`).join("")
+    ||`<div class="empty">${t('m_pick_empty')}</div>`,
     async()=>{});
   $("#askOk").style.display="none";
   ask.addEventListener("close",()=>{$("#askOk").style.display=""},{once:true});
 }
 function applySet(name,on){
   const opts=S.projects.map(p=>`<option value="${esc(p)}">`).join("");
-  askDialog((on?"开启":"关闭")+" 组合「"+name+"」","选择作用位置:从下面选一个,或在下方填自定义项目目录",
-  `<div class="hint" style="margin-bottom:4px">选择已注册的位置</div>
+  askDialog(tf('m_apply_t',{ACT:on?t('btn_apply'):t('btn_close'),NAME:name}),t('m_apply_h'),
+  `<div class="hint" style="margin-bottom:4px">${t('m_apply_sel')}</div>
    <select id="askSel" style="width:100%">
-    <option value="claude">Claude 全局</option><option value="codex">Codex 全局</option>
-    ${S.agents_root?'<option value="agents">Agents 全局</option>':""}
-    ${S.proj_targets.map(t=>`<option value="${esc(t.target)}">项目:${esc(t.path)}(.${t.kind})</option>`).join("")}</select>
-   <div class="hint" style="margin:12px 0 4px">或填一个自定义项目目录(留空则用上面选的)</div>
-   <input type="text" id="askProj" list="projList2" style="width:100%" placeholder="/Users/you/my-project">
+    <option value="claude">${t('pill_claude')}</option><option value="codex">${t('pill_codex')}</option>
+    ${S.agents_root?`<option value="agents">${t('pill_agents')}</option>`:""}
+    ${S.proj_targets.map(t2=>`<option value="${esc(t2.target)}">${t('m_proj_label')}:${esc(t2.path)}(.${t2.kind})</option>`).join("")}</select>
+   <div class="hint" style="margin:12px 0 4px">${t('m_apply_custom')}</div>
+   <input type="text" id="askProj" list="projList2" style="width:100%" placeholder="${t('m_addproj_ph')}">
    <datalist id="projList2">${opts}</datalist>
    <div class="row" style="margin-top:10px">
-     <label class="hint"><input type="radio" name="pkind" value="claude" checked> .claude(Claude Code)</label>
-     <label class="hint"><input type="radio" name="pkind" value="codex"> .codex(Codex)</label>
-     <label class="hint"><input type="radio" name="pkind" value="agents"> .agents(通用)</label>
+     <label class="hint"><input type="radio" name="pkind" value="claude" checked> ${t('radio_claude')}</label>
+     <label class="hint"><input type="radio" name="pkind" value="codex"> ${t('radio_codex')}</label>
+     <label class="hint"><input type="radio" name="pkind" value="agents"> ${t('radio_agents')}</label>
    </div>`,
   async()=>{
     const p=$("#askProj").value.trim();
@@ -1594,76 +1788,71 @@ function applySet(name,on){
     }
     await post("/api/set-apply",{set:name,target,on})})}
 async function delSkill(n){
-  if(confirm("确定删除「"+n+"」?自建技能会进回收站(不真删),网上引入的只是撤掉快照。"))
+  if(confirm(tf('m_del_skill',{NAME:n})))
     await post("/api/delete",{name:n})}
 async function removeSource(n){
-  // 前置检查:该来源是否还有"跟随更新"的技能拴着 -- 有则卡片内常驻提示,不发请求
   const src=S.sources.find(s=>s.name===n);
   const refs=(src&&src.skills||[]).filter(k=>k.imported_type==="ref");
   if(refs.length){
     const el=$("#chk-"+n);
     if(el) el.innerHTML=`<div class="warnbox" style="margin-top:8px">
-      ⚠ 还有 ${refs.length} 个"跟随更新"的技能引用此来源,无法删除来源仓库(它们还需要仓库做检查更新):
+      ${tf('m_remove_blocked',{COUNT:refs.length})}
       ${refs.map(k=>`<div class="row" style="margin:4px 0"><b>${esc(k.imported_as)}</b>
-        <button class="ghost" style="font-size:11px;padding:1px 8px" onclick="post('/api/source/fork',{name:'${esc(k.imported_as)}'}).then(()=>removeSource('${esc(n)}'))">转副本</button>
-        <span class="hint" style="font-size:11px">转副本后即可删除来源</span></div>`).join("")}
-      <div class="hint" style="margin-top:4px">已引入的技能在「技能」页用「检查更新」跟进上游。</div></div>`;
-    toast("来源被跟随更新的技能引用,无法删除(见卡片内提示)");
+        <button class="ghost" style="font-size:11px;padding:1px 8px" onclick="post('/api/source/fork',{name:'${esc(k.imported_as)}'}).then(()=>removeSource('${esc(n)}'))">${t('m_remove_fork')}</button>
+        <span class="hint" style="font-size:11px">${t('m_remove_fork_hint')}</span></div>`).join("")}
+      <div class="hint" style="margin-top:4px">${t('m_remove_hint')}</div></div>`;
+    toast(t('m_remove_toast'));
     return;
   }
-  if(confirm("移除来源「"+n+"」?已转为独立副本的技能不受影响。"))
+  if(confirm(tf('m_remove_src_c',{NAME:n})))
     await post("/api/source/remove",{source:n})}
 async function importSkill(source,subpath,mode){await post("/api/source/import",{source,subpath,mode})}
 async function addSource(){const u=$("#srcUrl").value.trim();if(!u)return;
-  const b=$("#srcAddBtn");b.disabled=true;b.textContent="下载中…";
-  try{await post("/api/source/add",{url:u})}finally{b.disabled=false;b.textContent="下载来源(联网)"}}
+  const b=$("#srcAddBtn");b.disabled=true;b.textContent=t('m_dl_ing');
+  try{await post("/api/source/add",{url:u})}finally{b.disabled=false;b.textContent=t('btn_download')}}
 async function checkSource(name){
   const body=$("#srcChkBody");
-  $("#srcChkTitle").textContent="检查更新 · "+name;
-  body.innerHTML='<div class="hint"><span class="spin"></span> 正在联网检查远端…</div>';
+  $("#srcChkTitle").textContent=tf('m_chk_remote_t',{NAME:name});
+  body.innerHTML=`<div class="hint"><span class="spin"></span> ${t('m_chk_ing')}</div>`;
   srcCheck.showModal();
   const r=await api("/api/source/check",{source:name});
-  if(!r.ok){body.innerHTML='<div class="warnbox">'+esc(r.out||"检查失败")+'</div>';return}
+  if(!r.ok){body.innerHTML='<div class="warnbox">'+esc(r.out||t('m_chk_fail'))+'</div>';return}
   if(r.note){body.innerHTML='<div class="hint">'+esc(r.note)+'</div>';return}
-  if(!r.behind){body.innerHTML='<div class="hint">✓ 已是最新</div>';return}
-  body.innerHTML=`<div class="pendbox"><b>远端有 ${r.behind} 个新提交(目标版本 ${esc(r.target)})</b>
-    影响 ${r.affected.length} 个跟随更新的技能(${r.affected.map(a=>a.skill).join("、")||"无"})。
-    先看下面的提交列表和受影响文件,确认后再更新;更新只会前进到上面这个版本。
+  if(!r.behind){body.innerHTML=`<div class="hint">${t('m_chk_latest')}</div>`;return}
+  body.innerHTML=`<div class="pendbox"><b>${tf('m_chk_behind',{COUNT:r.behind,VER:esc(r.target)})}</b>
+    ${tf('m_chk_affect',{COUNT:r.affected.length,NAMES:r.affected.map(a=>a.skill).join("、")||"—"})}
     ${r.affected.length?`<pre>${esc(r.affected.map(a=>a.skill+":\n  "+a.files.join("\n  ")).join("\n"))}</pre>`:""}
     <pre>${esc(r.commits)}</pre>
     <div class="row" style="margin-top:8px">
-      <button class="primary" onclick="updateSource('${name}','${esc(r.token)}')">更新已关联技能到该版本</button>
+      <button class="primary" onclick="updateSource('${name}','${esc(r.token)}')">${t('m_chk_update_btn')}</button>
     </div></div>`;
 }
 async function updateSource(name,token){
   const body=$("#srcChkBody");
-  body.innerHTML='<div class="hint"><span class="spin"></span> 正在同步快照…</div>';
+  body.innerHTML=`<div class="hint"><span class="spin"></span> ${t('m_sync_ing')}</div>`;
   await post("/api/source/update",{source:name,token});
-  body.innerHTML='<div class="hint">✓ 更新完成</div>';
+  body.innerHTML=`<div class="hint">${t('m_sync_done')}</div>`;
 }
 const editor=$("#editor");
 async function showDiff(name,target){
   const d=$("#diffBody");
-  $("#diffTitle").textContent="差异:"+name;
-  d.innerHTML='<span class="spin"></span> 正在比较…';
+  $("#diffTitle").textContent=tf('m_diff_title',{NAME:name});
+  d.innerHTML=`<span class="spin"></span> ${t('m_diff_ing')}`;
   $("#diff").showModal();
   const j=await api("/api/diff",{name,target});
-  if(!j.ok){d.innerHTML='<div class="warnbox">'+esc(j.out||"读取失败")+'</div>';return}
-  // 左=library(真源),右=放置点副本;绿行=库里多的,红行=副本独有的改动
+  if(!j.ok){d.innerHTML='<div class="warnbox">'+esc(j.out||t('m_diff_fail'))+'</div>';return}
   const colored=esc(j.diff).split("\n").map(l=>{
     if(l.startsWith("---")||l.startsWith("+++")||l.startsWith("@@"))return '<span class="df-h">'+l+'</span>';
     if(l.startsWith("-"))return '<span class="df-del">'+l+'</span>';
     if(l.startsWith("+"))return '<span class="df-add">'+l+'</span>';
     return l;
   }).join("\n");
-  d.innerHTML=colored||'(无差异)';
-  // 记下当前 diff 的技能,供"收回为软链接"按钮用
+  d.innerHTML=colored||t('m_diff_none');
   $("#diffRelink").onclick=()=>{diff.close();relink(name,target,"")};
 }
 async function relink(name,target,label){
   const where=label||target;
-  if(!confirm("把「"+name+"」在 "+where+" 的独立副本收回为软链接(跟随库)?\n\n"+
-      "库内容视为真源。副本里的本地改动会备份到 attic/trash(不真删),之后该处跟随库。"))
+  if(!confirm(tf('m_relink_c',{NAME:name,WHERE:where})))
     return;
   await post("/api/relink",{name,target});
 }
@@ -1671,8 +1860,8 @@ async function editSkill(name){
   const j=await (await fetch("/api/skill?name="+encodeURIComponent(name))).json();
   if(!j.ok){toast(j.out);return}
   ED={type:"skill",name};
-  $("#edTitle").textContent=(j.readonly?"查看 ":"编辑 ")+name;
-  $("#edHint").textContent=j.readonly?"跟随更新的技能只读;想改就先「转为我的副本」":"这里只编辑 SKILL.md;脚本等其他文件用「打开目录」放进去。保存即处处生效";
+  $("#edTitle").textContent=j.readonly?tf('m_ed_ref',{NAME:name}):tf('m_ed_edit',{NAME:name});
+  $("#edHint").textContent=j.readonly?t('m_ed_hint_ref'):t('m_ed_hint_own');
   $("#edSave").style.display=j.readonly?"none":"";
   $("#edOpen").style.display="";
   $("#edBody").value=j.content;editor.showModal();
@@ -1680,16 +1869,15 @@ async function editSkill(name){
 function editSet(name){openSetEditor(name,S.sets[name]||[])}
 function newSet(){openSetEditor(null,[])}
 function openSetEditor(name,preset){
-  // name=null 表示新建(名字留空待填);preset = 已选技能名数组(编辑时预勾选)
-  SE_ORIG=name;   // 记下原组合名,保存时据此判断是新建还是编辑(重名校验要排除自身)
-  $("#seTitle").textContent=(name?"编辑组合 ":"新建组合");
+  SE_ORIG=name;
+  $("#seTitle").textContent=name?t('m_se_edit'):t('m_se_new');
   $("#setName").value=name||"";
   $("#seCards").innerHTML=setEditorCards(preset);
   setEditor.showModal();
 }
 function setEditorCards(preset){
   const pre=new Set(preset);
-  if(!S.skills.length)return '<div class="empty" style="grid-column:1/-1">库里还没有技能</div>';
+  if(!S.skills.length)return `<div class="empty" style="grid-column:1/-1">${t('m_se_empty')}</div>`;
   return S.skills.map(k=>{
     const on=pre.has(k.name);
     return `<label class="skcard sel ${on?"on":""}" data-n="${esc(k.name)}">
@@ -1697,13 +1885,13 @@ function setEditorCards(preset){
         <input type="checkbox" ${on?"checked":""}>
         <span class="sk-name" title="${esc(k.name)}">${esc(k.name)}</span>
       </div>
-      <div class="sk-desc" title="${esc(k.desc||"")}">${esc(k.desc)||'<i>还没写 description</i>'}</div>
+      <div class="sk-desc" title="${esc(k.desc||"")}">${esc(k.desc)||`<i>${t('m_no_desc_i')}</i>`}</div>
     </label>`}).join("");
 }
 async function saveSetEditor(){
   const name=$("#setName").value.trim();
-  if(!/^[a-z0-9][a-z0-9._-]*$/.test(name)){toast("组合名只能用小写字母、数字、连字符");return}
-  if(name!==SE_ORIG && S.sets[name]){toast("组合「"+name+"」已存在,换一个名字或用编辑改它");return}
+  if(!/^[a-z0-9][a-z0-9._-]*$/.test(name)){toast(t('m_se_name_err'));return}
+  if(name!==SE_ORIG && S.sets[name]){toast(tf('m_se_dup',{NAME:name}));return}
   const picked=[...document.querySelectorAll("#seCards .skcard.on")].map(e=>e.dataset.n);
   await post("/api/set",{name,content:picked.join("\n")+(picked.length?"\n":"")});
   setEditor.close();

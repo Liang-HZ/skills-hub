@@ -487,11 +487,13 @@ def api_state():
         skills.append({"name": dname, "desc": desc_of(dname), "origin": org.get(dname),
                        "places": places})
     warnings = []
-    roots = [(f"{k.capitalize()} 全局", ROOTS[k]) for k in KINDS] + \
-            [(f"项目 {t['path']}(.{t['kind']})",
+    divergences = []     # 结构化:每个"独立副本已和库不同"的技能,供前端做可点击入口
+    roots = [(k, f"{k.capitalize()} 全局", ROOTS[k]) for k in KINDS] + \
+            [(f"{t['path']}::{t['kind']}",
+              f"项目 {t['path']}(.{t['kind']})",
               Path(t["path"]) / f".{t['kind']}" / "skills") for t in proj_targets]
     few = lambda names: "、".join(names[:3]) + (" 等" if len(names) > 3 else "")
-    for label, root in roots:
+    for target, label, root in roots:
         if not root.is_dir():
             continue
         broken, diverged, unmanaged = [], [], []
@@ -509,6 +511,7 @@ def api_state():
             warnings.append(f"{label} 有 {len(broken)} 个失联的技能链接({few(broken)}),把开关拨掉即可清除")
         if diverged:
             warnings.append(f"{label} 有 {len(diverged)} 个独立副本内容已和库里不同({few(diverged)})")
+            divergences += [{"name": n, "target": target, "label": label} for n in diverged]
         if unmanaged:
             warnings.append(f"{label} 有 {len(unmanaged)} 个技能还没进库({few(unmanaged)}),可用「扫描收编」接管")
     for t in stale:
@@ -521,7 +524,7 @@ def api_state():
         autostart = "com.skills-hub.webui" in sh(["launchctl", "list"]).stdout
     return {"skills": skills, "projects": projects, "proj_targets": proj_targets,
             "agents_root": ROOTS["agents"].is_dir(),
-            "stale_targets": stale, "warnings": warnings,
+            "stale_targets": stale, "warnings": warnings, "divergences": divergences,
             "sets": sets, "sets_raw": sets_raw, "sources": vendor_sources(),
             "clean_empty_dirs": ui_conf().get("clean_empty_dirs", True),
             "platform": sys.platform, "autostart": autostart}
@@ -732,6 +735,64 @@ def op_open(b):
     return {"ok": True, "out": "已在文件管理器打开"}
 
 
+def op_relink(b):
+    """把某个放置点上"内容已和库里不同"的独立副本收回为软链接。
+
+    独立副本 = 真目录(非软链接),且内容与 library 不一致。此操作把旧副本
+    备份进 attic/trash,再重建一条指向 library 的软链接,使该处重新跟随库。
+    库内容视为真源,副本里的本地改动只进备份、不回写库。
+    """
+    name = (b.get("name") or "").strip()
+    target = (b.get("target") or "").strip()
+    if not NAME_RE.match(name) or not (LIB / name).is_dir():
+        return {"ok": False, "out": "技能不存在"}
+    dest = resolve_place(target)
+    e = dest / name
+    st = entry_state(e, name)
+    if st != "copy-diverged":
+        return {"ok": False, "out": f"「{name}」在该处不是独立副本(状态:{st}),无需收回"}
+    trash = HUB / "attic" / "trash" / datetime.now().strftime("%Y%m%d-%H%M%S")
+    trash.mkdir(parents=True, exist_ok=True)
+    shutil.move(str(e), str(trash / name))
+    make_link(e, LIB / name)
+    git_commit(f"收回 {name} 副本为软链接({target})")
+    return {"ok": True,
+            "out": f"已把「{name}」收回为软链接(跟随库);旧副本备份在 attic/trash"}
+
+
+def op_diff(b):
+    """只读:返回某放置点副本与库内容的统一 diff。不联网、不写盘。"""
+    name = (b.get("name") or "").strip()
+    target = (b.get("target") or "").strip()
+    if not NAME_RE.match(name) or not (LIB / name).is_dir():
+        return {"ok": False, "out": "技能不存在"}
+    dest = resolve_place(target)
+    e = dest / name
+    if not e.is_dir():
+        return {"ok": False, "out": "该处没有这个技能的副本"}
+    import difflib
+    parts = []          # 拼成一段 unified diff 文本
+    lib = LIB / name
+
+    def walk(a: Path, b: Path, rel=""):
+        a_files = {p.name for p in a.iterdir() if not p.name.startswith(".")} if a.is_dir() else set()
+        b_files = {p.name for p in b.iterdir() if not p.name.startswith(".")} if b.is_dir() else set()
+        for fn in sorted(a_files | b_files):
+            ap, bp, r = a / fn, b / fn, (rel + "/" + fn).lstrip("/")
+            if ap.is_dir() and bp.is_dir():
+                walk(ap, bp, r)
+            elif ap.is_dir() or bp.is_dir():
+                parts.append(f"文件/目录类型不同:{r}")
+            else:
+                at = ap.read_text(errors="replace").splitlines(keepends=True) if ap.is_file() else []
+                bt = bp.read_text(errors="replace").splitlines(keepends=True) if bp.is_file() else []
+                if at != bt:
+                    parts.extend(difflib.unified_diff(
+                        at, bt, fromfile=f"library/{name}/{r}", tofile=f"{target}/{name}/{r}"))
+    walk(lib, e)
+    return {"ok": True, "diff": "".join(parts) or "(内容相同)"}
+
+
 def op_set_delete(b):
     name = (b.get("name") or "").strip()
     f = SETS / f"{name}.txt"
@@ -836,6 +897,7 @@ POST_OPS = {
     "/api/set": op_save_set, "/api/set-delete": op_set_delete,
     "/api/scan": op_scan_local, "/api/adopt-bulk": op_adopt_bulk,
     "/api/import": op_import, "/api/open": op_open,
+    "/api/relink": op_relink, "/api/diff": op_diff,
     "/api/source/check": lambda b: {"ok": True, **source_check(b["source"])},
     "/api/source/update": lambda b: source_update(b["source"], b.get("token")),
 }
@@ -1011,11 +1073,21 @@ background:var(--card);color:var(--muted);cursor:pointer;user-select:none}
 .skcard{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
 padding:11px 14px 10px;box-shadow:var(--shadow);display:flex;flex-direction:column;min-width:0}
 .sk-head{display:flex;gap:6px;align-items:center;min-width:0}
-.sk-name{font-weight:650;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sk-name{font-weight:650;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+flex:1 1 auto;min-width:0}
 .sk-desc{color:var(--muted);font-size:12px;line-height:1.55;margin:3px 0 8px;
 display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.sk-acts{margin-left:auto;display:flex;flex:none}
-.sk-acts button{padding:2px 6px;font-size:11.5px}
+.sk-acts{margin-left:auto;display:flex;flex:none;gap:2px}
+.sk-acts button{padding:2px 7px;font-size:12px;line-height:1.4}
+.src-link{color:inherit;text-decoration:none;cursor:pointer;max-width:110px;overflow:hidden;
+text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:bottom}
+.src-link:hover{text-decoration:underline}
+/* 勾选式技能卡(组合编辑器用):整卡可点,勾上高亮 */
+.skcard.sel{cursor:pointer}
+.skcard.sel:hover{border-color:var(--accent)}
+.skcard.sel.on{background:var(--accent-soft);border-color:var(--accent)}
+.skcard.sel .se-head{display:flex;align-items:center;gap:7px;min-width:0}
+.skcard.sel input[type=checkbox]{flex:none;width:15px;height:15px;cursor:pointer}
 .pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:3px 10px;
 border-radius:99px;border:1.5px solid var(--line);cursor:pointer;color:var(--muted);
 user-select:none;background:var(--card);transition:border-color .12s}
@@ -1053,6 +1125,16 @@ color:var(--bg);padding:10px 20px;border-radius:12px;font-size:13px;opacity:0;tr
 pointer-events:none;max-width:82vw;z-index:99}
 .toast.show{opacity:.96}
 .empty{color:var(--faint);font-size:13px;padding:22px 0;text-align:center}
+.diff-pre{background:var(--panel);border:1px solid var(--line);border-radius:var(--rs);
+padding:12px 14px;max-height:58vh;overflow:auto;font:12.5px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+white-space:pre-wrap;word-break:break-word;margin:0}
+.df-h{color:var(--muted)}
+.df-add{color:var(--ok)}
+.df-del{color:var(--bad)}
+.warnbox .dv-item{display:inline-block;background:rgba(0,0,0,.05);border-radius:6px;padding:1px 7px;margin:2px 4px 2px 0}
+.warnbox .dv-link{color:inherit;text-decoration:underline;cursor:pointer;font-size:12px;margin-left:4px;opacity:.85}
+.warnbox .dv-link:hover{opacity:1}
+code{background:rgba(0,0,0,.07);border-radius:4px;padding:0 4px;font:inherit;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em}
 .spin{display:inline-block;width:12px;height:12px;border:2px solid var(--info);
 border-top-color:transparent;border-radius:50%;animation:sp 1s linear infinite;vertical-align:-2px}
 @keyframes sp{to{transform:rotate(360deg)}}
@@ -1097,6 +1179,38 @@ border-top-color:transparent;border-radius:50%;animation:sp 1s linear infinite;v
   </div>
 </dialog>
 
+<dialog id="diff">
+  <h2 id="diffTitle">差异</h2>
+  <div class="hint" style="margin-bottom:8px">左 <code>library/</code>=库(真源),右=该放置点副本。<span class="df-add">绿行</span>=库里有的, <span class="df-del">红行</span>=副本独有的改动。</div>
+  <pre id="diffBody" class="diff-pre"></pre>
+  <div class="row" style="justify-content:flex-end;margin-top:12px">
+    <button onclick="diff.close()">关闭</button>
+    <button class="primary" id="diffRelink">收回为软链接</button>
+  </div>
+</dialog>
+
+<dialog id="setEditor">
+  <h2 id="seTitle">组合</h2>
+  <div class="row" style="gap:8px;margin-bottom:4px">
+    <label class="hint" style="white-space:nowrap">组合名</label>
+    <input type="text" id="setName" style="flex:1" placeholder="my-set(小写字母、数字、连字符)">
+  </div>
+  <div class="hint" style="margin-bottom:8px">勾选要放进这组的技能;悬浮卡片可看完整说明。</div>
+  <div class="skgrid" id="seCards" style="max-height:52vh;overflow-y:auto;align-content:start"></div>
+  <div class="row" style="justify-content:flex-end;margin-top:12px">
+    <button onclick="setEditor.close()">取消</button>
+    <button class="primary" onclick="saveSetEditor()">保存</button>
+  </div>
+</dialog>
+
+<dialog id="srcCheck">
+  <h2 id="srcChkTitle">检查更新</h2>
+  <div id="srcChkBody" style="min-height:60px"></div>
+  <div class="row" style="justify-content:flex-end;margin-top:12px">
+    <button onclick="srcCheck.close()">关闭</button>
+  </div>
+</dialog>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1104,7 +1218,7 @@ const $=s=>document.querySelector(s);
 const esc=s=>(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 const base=p=>p.split(/[\\/]/).filter(Boolean).pop();
 const TOKEN="__CSRF__";
-let S=null, TAB=localStorage.getItem("tab")||"skills", FILTER="all", ED=null;
+let S=null, TAB=localStorage.getItem("tab")||"skills", FILTER="all", ED=null, SE_ORIG=null;
 
 function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");
   clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("show"),3600)}
@@ -1124,10 +1238,22 @@ async function load(){S=await (await fetch("/api/state")).json();
 function show(t){TAB=t;localStorage.setItem("tab",t);render()}
 
 /* ---------- 徽章 ---------- */
+function trunc(s,n){return s&&s.length>n?s.slice(0,n)+"…":s||""}
+function sourceUrl(name){
+  const src=S.sources.find(s=>s.name===name);
+  if(!src||!src.url)return "";
+  let u=src.url.replace(/\.git$/,"");
+  // SSH 格式 git@github.com:owner/repo -> https://github.com/owner/repo
+  const m=u.match(/^git@([^:]+):(.+)$/);
+  return m?`https://${m[1]}/${m[2]}`:u;
+}
 function originTag(o){
   if(!o||o.type==="own")return `<span class="tag src-own">自建</span>`;
-  if(o.type==="ref")return `<span class="tag src-ref" title="内容是引入时的快照;你手动检查、确认后可跟进上游更新">⇅ ${esc(o.source)} · 跟随更新</span>`;
-  return `<span class="tag src-copy" title="从来源复制后已与上游脱钩,归你所有">⧉ ${esc(o.source)} · 独立副本</span>`;
+  const url=o.source?sourceUrl(o.source):"";
+  const name=esc(trunc(o.source||"",12));
+  const link=url?`<a class="src-link" href="${esc(url)}" target="_blank" rel="noopener" title="${esc(o.source||"")}">${name}</a>`:`<span>${name}</span>`;
+  if(o.type==="ref")return `<span class="tag src-ref" title="跟随更新 · 内容是引入时的快照,可手动跟进上游">${'⇅'} ${link}</span>`;
+  return `<span class="tag src-copy" title="独立副本 · 从来源复制后已与上游脱钩,归你所有">${'⧉'} ${link}</span>`;
 }
 function pill(skill,target,label,state,title){
   if(state==="hub-link"||state==="copy-synced")
@@ -1159,6 +1285,25 @@ function renderNav(){
 }
 
 /* ---------- 技能页 ---------- */
+function warningsHtml(){
+  // 普通警告照旧;对"独立副本内容已和库里不同"这一类,额外渲染可点击的技能名。
+  const plain = S.warnings.filter(w => !w.includes("独立副本内容已和库里不同"));
+  let html = plain.map(w=>`<div class="warnbox">⚠ ${esc(w)}</div>`).join("");
+  if(S.divergences && S.divergences.length){
+    // 按来源(label)分组展示
+    const byLabel = {};
+    for(const d of S.divergences){ (byLabel[d.label]=byLabel[d.label]||[]).push(d); }
+    for(const [label, ds] of Object.entries(byLabel)){
+      const items = ds.map(d=>
+        `<span class="dv-item">${esc(d.name)}
+           <a class="dv-link" onclick="showDiff('${esc(d.name)}','${esc(d.target)}')">查看差异</a>
+           <a class="dv-link" onclick="relink('${esc(d.name)}','${esc(d.target)}','${esc(label)}')">收回为软链接</a>
+         </span>`).join("");
+      html += `<div class="warnbox">⚠ ${esc(label)} 有 ${ds.length} 个独立副本内容已和库里不同:${items}</div>`;
+    }
+  }
+  return html;
+}
 function skillMatch(k){
   const kw=(window._kw||"").toLowerCase();
   if(kw&&!k.name.includes(kw)&&!(k.desc||"").toLowerCase().includes(kw))return false;
@@ -1178,9 +1323,10 @@ function skillCards(){
     return `<div class="skcard">
       <div class="sk-head"><span class="sk-name" title="${k.name}">${k.name}</span>${originTag(k.origin)}
         <span class="sk-acts">
-          <button class="ghost" onclick="editSkill('${k.name}')">${isRef?"查看":"编辑"}</button>
-          ${isRef?`<button class="ghost" title="复制一份归自己,以后可编辑,不再跟随来源更新" onclick="post('/api/source/fork',{name:'${k.name}'})">转副本</button>`:""}
-          <button class="ghost danger" onclick="delSkill('${k.name}')">删除</button></span></div>
+          <button class="ghost" title="${isRef?"查看":"编辑"}" onclick="editSkill('${k.name}')">✍</button>
+          ${isRef?`<button class="ghost" title="检查上游更新" onclick="checkSource('${esc(k.origin.source)}')">↻</button>`:""}
+          ${isRef?`<button class="ghost" title="转为独立副本,以后可编辑,不再跟随来源" onclick="post('/api/source/fork',{name:'${k.name}'})">⧉</button>`:""}
+          <button class="ghost danger" title="删除" onclick="delSkill('${k.name}')">✕</button></span></div>
       <div class="sk-desc" title="${esc(k.desc)}">${esc(k.desc)||'<i>还没写 description</i>'}</div>
       <div class="pills">
         ${pill(k.name,"claude","Claude 全局",k.places.claude,"~/.claude/skills")}
@@ -1203,7 +1349,7 @@ function pageSkills(){
     <span class="sub">技能保存在库里,删不丢、改全生效。开关拨绿 = 在那个地方能用。</span>
   </div>
   ${onboard()}
-  ${S.warnings.map(w=>`<div class="warnbox">⚠ ${esc(w)}</div>`).join("")}
+  ${warningsHtml()}
   <div class="row" style="margin-top:14px">
     <input type="text" id="search" placeholder="搜技能名或描述…" style="width:260px"
       value="${esc(window._kw||"")}" oninput="window._kw=this.value;$('#sklist').innerHTML=skillCards()">
@@ -1283,29 +1429,42 @@ function pageUsage(){
 }
 
 /* ---------- 来源页 ---------- */
+let SRC_COLLAPSED={};   // 来源名 -> 是否收起技能列表
 function pageSources(){
   return `
   <div class="pagehead"><h1>网上来源</h1>
-    <span class="sub">别人的技能仓库先下载到本机隔离目录,挑着引入;引入的是当时内容的快照。下载、检查更新、合入更新都只在你点击时发生。<b>本工具只负责管理,不验证第三方内容的安全性——引入或更新前请自行阅读内容。</b></span></div>
+    <span class="sub">别人的技能仓库先下载到本机隔离目录,挑着引入;引入的是当时内容的快照。下载、检查更新、合入更新都只在你点击时发生。<b>本工具只负责管理,不验证第三方内容的安全性--引入或更新前请自行阅读内容。</b></span></div>
   <div class="card">
     <h2>添加技能仓库</h2>
     <div class="row" style="margin-top:8px">
       <input type="text" id="srcUrl" placeholder="https://github.com/xxx/skills.git" style="flex:1;min-width:260px">
       <button class="primary" id="srcAddBtn" onclick="addSource()">下载来源(联网)</button></div></div>
-  ${S.sources.map(s=>`<div class="card">
+  ${S.sources.map(s=>{
+    const hasImp=s.skills.some(k=>k.imported_as);
+    // 引入过的来源默认收起(除非用户手动展开过)
+    const collapsed=SRC_COLLAPSED[s.name]!==undefined?SRC_COLLAPSED[s.name]:hasImp;
+    return `<div class="card">
     <div class="row" style="justify-content:space-between">
-      <h2 style="margin:0">${esc(s.name)}</h2>
+      <h2 style="margin:0">${esc(s.name)} <span class="hint" style="font-weight:400">${s.skills.length} 个技能${hasImp?` · ${s.skills.filter(k=>k.imported_as).length} 已引入`:""}</span></h2>
       <span class="row">${s.is_git?`<button class="ghost" onclick="checkSource('${s.name}')">检查远端更新(联网)</button>`:""}
+        <button class="ghost" onclick="toggleSrcList('${s.name}')" id="tog-${s.name}">${collapsed?"展开":"收起"}技能列表</button>
         <button class="ghost danger" onclick="removeSource('${s.name}')">移除来源</button></span></div>
     <div class="hint mono">${esc(s.url||"(本地目录)")} · ${esc(s.head)}</div>
     <div id="chk-${s.name}"></div>
-    <div style="margin-top:8px">${s.skills.map(k=>`<div class="srcskill">
+    <div id="list-${s.name}" style="margin-top:8px;${collapsed?"display:none":""}">${s.skills.map(k=>`<div class="srcskill">
       <b>${esc(k.name)}</b><span class="hint" style="flex:1">${esc(k.desc)}</span>
       ${k.imported_as?`<span class="tag done">已引入为 ${k.imported_as}(${k.imported_type==="ref"?"跟随更新":"独立副本"})</span>`
         :`<button class="ghost" onclick="importSkill('${s.name}','${esc(k.subpath)}','ref')" title="以后可在你手动检查、确认后跟进上游更新">引入 · 跟随更新</button>
           <button class="ghost" onclick="importSkill('${s.name}','${esc(k.subpath)}','copy')" title="复制一份归自己,与来源脱钩">引入 · 独立副本</button>`}
-    </div>`).join("")||'<span class="hint">这个仓库里没找到技能</span>'}</div></div>`).join("")
+    </div>`).join("")||'<span class="hint">这个仓库里没找到技能</span>'}</div></div>`}).join("")
   ||`<div class="empty">还没有添加任何来源。粘贴一个技能仓库地址试试。</div>`}`;
+}
+function toggleSrcList(name){
+  const list=$("#list-"+name),tog=$("#tog-"+name);
+  const now=list.style.display==="none";
+  list.style.display=now?"":"none";
+  tog.textContent=(now?"展开":"收起")+"技能列表";
+  SRC_COLLAPSED[name]=!now;
 }
 
 /* ---------- 设置页 ---------- */
@@ -1409,16 +1568,49 @@ function pickSkill(target,label){
   ask.addEventListener("close",()=>{$("#askOk").style.display=""},{once:true});
 }
 function applySet(name,on){
-  askDialog((on?"开启":"关闭")+" 组合「"+name+"」","选择作用位置",
-  `<select id="askIn" style="width:100%">
+  const opts=S.projects.map(p=>`<option value="${esc(p)}">`).join("");
+  askDialog((on?"开启":"关闭")+" 组合「"+name+"」","选择作用位置:从下面选一个,或在下方填自定义项目目录",
+  `<div class="hint" style="margin-bottom:4px">选择已注册的位置</div>
+   <select id="askSel" style="width:100%">
     <option value="claude">Claude 全局</option><option value="codex">Codex 全局</option>
     ${S.agents_root?'<option value="agents">Agents 全局</option>':""}
-    ${S.proj_targets.map(t=>`<option value="${esc(t.target)}">项目:${esc(t.path)}(.${t.kind})</option>`).join("")}</select>`,
-  async()=>{await post("/api/set-apply",{set:name,target:$("#askIn").value,on})})}
+    ${S.proj_targets.map(t=>`<option value="${esc(t.target)}">项目:${esc(t.path)}(.${t.kind})</option>`).join("")}</select>
+   <div class="hint" style="margin:12px 0 4px">或填一个自定义项目目录(留空则用上面选的)</div>
+   <input type="text" id="askProj" list="projList2" style="width:100%" placeholder="/Users/you/my-project">
+   <datalist id="projList2">${opts}</datalist>
+   <div class="row" style="margin-top:10px">
+     <label class="hint"><input type="radio" name="pkind" value="claude" checked> .claude(Claude Code)</label>
+     <label class="hint"><input type="radio" name="pkind" value="codex"> .codex(Codex)</label>
+     <label class="hint"><input type="radio" name="pkind" value="agents"> .agents(通用)</label>
+   </div>`,
+  async()=>{
+    const p=$("#askProj").value.trim();
+    let target;
+    if(p){
+      const kind=document.querySelector('input[name=pkind]:checked').value;
+      target=p+"::"+kind;
+    }else{
+      target=$("#askSel").value;
+    }
+    await post("/api/set-apply",{set:name,target,on})})}
 async function delSkill(n){
   if(confirm("确定删除「"+n+"」?自建技能会进回收站(不真删),网上引入的只是撤掉快照。"))
     await post("/api/delete",{name:n})}
 async function removeSource(n){
+  // 前置检查:该来源是否还有"跟随更新"的技能拴着 -- 有则卡片内常驻提示,不发请求
+  const src=S.sources.find(s=>s.name===n);
+  const refs=(src&&src.skills||[]).filter(k=>k.imported_type==="ref");
+  if(refs.length){
+    const el=$("#chk-"+n);
+    if(el) el.innerHTML=`<div class="warnbox" style="margin-top:8px">
+      ⚠ 还有 ${refs.length} 个"跟随更新"的技能引用此来源,无法删除来源仓库(它们还需要仓库做检查更新):
+      ${refs.map(k=>`<div class="row" style="margin:4px 0"><b>${esc(k.imported_as)}</b>
+        <button class="ghost" style="font-size:11px;padding:1px 8px" onclick="post('/api/source/fork',{name:'${esc(k.imported_as)}'}).then(()=>removeSource('${esc(n)}'))">转副本</button>
+        <span class="hint" style="font-size:11px">转副本后即可删除来源</span></div>`).join("")}
+      <div class="hint" style="margin-top:4px">已引入的技能在「技能」页用「检查更新」跟进上游。</div></div>`;
+    toast("来源被跟随更新的技能引用,无法删除(见卡片内提示)");
+    return;
+  }
   if(confirm("移除来源「"+n+"」?已转为独立副本的技能不受影响。"))
     await post("/api/source/remove",{source:n})}
 async function importSkill(source,subpath,mode){await post("/api/source/import",{source,subpath,mode})}
@@ -1426,12 +1618,15 @@ async function addSource(){const u=$("#srcUrl").value.trim();if(!u)return;
   const b=$("#srcAddBtn");b.disabled=true;b.textContent="下载中…";
   try{await post("/api/source/add",{url:u})}finally{b.disabled=false;b.textContent="下载来源(联网)"}}
 async function checkSource(name){
-  const el=$("#chk-"+name);el.innerHTML='<div class="hint" style="margin-top:8px"><span class="spin"></span> 正在联网检查远端…</div>';
+  const body=$("#srcChkBody");
+  $("#srcChkTitle").textContent="检查更新 · "+name;
+  body.innerHTML='<div class="hint"><span class="spin"></span> 正在联网检查远端…</div>';
+  srcCheck.showModal();
   const r=await api("/api/source/check",{source:name});
-  if(!r.ok){el.innerHTML='<div class="warnbox">'+esc(r.out||"检查失败")+'</div>';return}
-  if(r.note){el.innerHTML='<div class="hint" style="margin-top:8px">'+esc(r.note)+'</div>';return}
-  if(!r.behind){el.innerHTML='<div class="hint" style="margin-top:8px">✓ 已是最新</div>';return}
-  el.innerHTML=`<div class="pendbox"><b>远端有 ${r.behind} 个新提交(目标版本 ${esc(r.target)})</b>
+  if(!r.ok){body.innerHTML='<div class="warnbox">'+esc(r.out||"检查失败")+'</div>';return}
+  if(r.note){body.innerHTML='<div class="hint">'+esc(r.note)+'</div>';return}
+  if(!r.behind){body.innerHTML='<div class="hint">✓ 已是最新</div>';return}
+  body.innerHTML=`<div class="pendbox"><b>远端有 ${r.behind} 个新提交(目标版本 ${esc(r.target)})</b>
     影响 ${r.affected.length} 个跟随更新的技能(${r.affected.map(a=>a.skill).join("、")||"无"})。
     先看下面的提交列表和受影响文件,确认后再更新;更新只会前进到上面这个版本。
     ${r.affected.length?`<pre>${esc(r.affected.map(a=>a.skill+":\n  "+a.files.join("\n  ")).join("\n"))}</pre>`:""}
@@ -1441,12 +1636,37 @@ async function checkSource(name){
     </div></div>`;
 }
 async function updateSource(name,token){
-  const el=$("#chk-"+name);
-  el.innerHTML='<div class="hint" style="margin-top:8px"><span class="spin"></span> 正在同步快照…</div>';
+  const body=$("#srcChkBody");
+  body.innerHTML='<div class="hint"><span class="spin"></span> 正在同步快照…</div>';
   await post("/api/source/update",{source:name,token});
-  if($("#chk-"+name))$("#chk-"+name).innerHTML="";
+  body.innerHTML='<div class="hint">✓ 更新完成</div>';
 }
 const editor=$("#editor");
+async function showDiff(name,target){
+  const d=$("#diffBody");
+  $("#diffTitle").textContent="差异:"+name;
+  d.innerHTML='<span class="spin"></span> 正在比较…';
+  $("#diff").showModal();
+  const j=await api("/api/diff",{name,target});
+  if(!j.ok){d.innerHTML='<div class="warnbox">'+esc(j.out||"读取失败")+'</div>';return}
+  // 左=library(真源),右=放置点副本;绿行=库里多的,红行=副本独有的改动
+  const colored=esc(j.diff).split("\n").map(l=>{
+    if(l.startsWith("---")||l.startsWith("+++")||l.startsWith("@@"))return '<span class="df-h">'+l+'</span>';
+    if(l.startsWith("-"))return '<span class="df-del">'+l+'</span>';
+    if(l.startsWith("+"))return '<span class="df-add">'+l+'</span>';
+    return l;
+  }).join("\n");
+  d.innerHTML=colored||'(无差异)';
+  // 记下当前 diff 的技能,供"收回为软链接"按钮用
+  $("#diffRelink").onclick=()=>{diff.close();relink(name,target,"")};
+}
+async function relink(name,target,label){
+  const where=label||target;
+  if(!confirm("把「"+name+"」在 "+where+" 的独立副本收回为软链接(跟随库)?\n\n"+
+      "库内容视为真源。副本里的本地改动会备份到 attic/trash(不真删),之后该处跟随库。"))
+    return;
+  await post("/api/relink",{name,target});
+}
 async function editSkill(name){
   const j=await (await fetch("/api/skill?name="+encodeURIComponent(name))).json();
   if(!j.ok){toast(j.out);return}
@@ -1457,18 +1677,51 @@ async function editSkill(name){
   $("#edOpen").style.display="";
   $("#edBody").value=j.content;editor.showModal();
 }
-function editSet(name){ED={type:"set",name};$("#edTitle").textContent="编辑组合 "+name;
-  $("#edHint").textContent="一行一个技能名,# 开头是注释";$("#edSave").style.display="";
-  $("#edOpen").style.display="none";
-  $("#edBody").value=S.sets_raw[name]||"";editor.showModal()}
-function newSet(){askDialog("新建组合","组合名(小写字母、数字、连字符)",
-  `<input type="text" id="askIn" style="width:100%" placeholder="my-set">`,
-  async()=>{const n=$("#askIn").value.trim();if(!n)return;
-    ED={type:"set",name:n};$("#edTitle").textContent="新建组合 "+n;
-    $("#edHint").textContent="一行一个技能名";$("#edSave").style.display="";
-    $("#edOpen").style.display="none";
-    $("#edBody").value="# 什么时候用这组\n";editor.showModal()})}
-async function saveEditor(){await post(ED.type==="skill"?"/api/skill":"/api/set",{name:ED.name,content:$("#edBody").value});editor.close()}
+function editSet(name){openSetEditor(name,S.sets[name]||[])}
+function newSet(){openSetEditor(null,[])}
+function openSetEditor(name,preset){
+  // name=null 表示新建(名字留空待填);preset = 已选技能名数组(编辑时预勾选)
+  SE_ORIG=name;   // 记下原组合名,保存时据此判断是新建还是编辑(重名校验要排除自身)
+  $("#seTitle").textContent=(name?"编辑组合 ":"新建组合");
+  $("#setName").value=name||"";
+  $("#seCards").innerHTML=setEditorCards(preset);
+  setEditor.showModal();
+}
+function setEditorCards(preset){
+  const pre=new Set(preset);
+  if(!S.skills.length)return '<div class="empty" style="grid-column:1/-1">库里还没有技能</div>';
+  return S.skills.map(k=>{
+    const on=pre.has(k.name);
+    return `<label class="skcard sel ${on?"on":""}" data-n="${esc(k.name)}">
+      <div class="se-head">
+        <input type="checkbox" ${on?"checked":""}>
+        <span class="sk-name" title="${esc(k.name)}">${esc(k.name)}</span>
+      </div>
+      <div class="sk-desc" title="${esc(k.desc||"")}">${esc(k.desc)||'<i>还没写 description</i>'}</div>
+    </label>`}).join("");
+}
+async function saveSetEditor(){
+  const name=$("#setName").value.trim();
+  if(!/^[a-z0-9][a-z0-9._-]*$/.test(name)){toast("组合名只能用小写字母、数字、连字符");return}
+  if(name!==SE_ORIG && S.sets[name]){toast("组合「"+name+"」已存在,换一个名字或用编辑改它");return}
+  const picked=[...document.querySelectorAll("#seCards .skcard.on")].map(e=>e.dataset.n);
+  await post("/api/set",{name,content:picked.join("\n")+(picked.length?"\n":"")});
+  setEditor.close();
+}
+// 卡片整行点击切换勾选(复选框本身的事件会冒泡,这里防双触发)
+document.addEventListener("change",e=>{
+  const card=e.target.closest("#seCards .skcard.sel");
+  if(!card)return;
+  card.classList.toggle("on",e.target.checked);
+});
+document.addEventListener("click",e=>{
+  const card=e.target.closest("#seCards .skcard.sel");
+  if(!card||e.target.tagName==="INPUT")return;   // 点复选框交给 change 处理
+  const cb=card.querySelector('input[type=checkbox]');
+  cb.checked=!cb.checked;
+  card.classList.toggle("on",cb.checked);
+});
+async function saveEditor(){await post("/api/skill",{name:ED.name,content:$("#edBody").value});editor.close()}
 
 load();
 </script></body></html>

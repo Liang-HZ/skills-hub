@@ -513,7 +513,7 @@ def api_state():
             warnings.append(f"{label} 有 {len(diverged)} 个独立副本内容已和库里不同({few(diverged)})")
             divergences += [{"name": n, "target": target, "label": label} for n in diverged]
         if unmanaged:
-            warnings.append(f"{label} 有 {len(unmanaged)} 个技能还没进库({few(unmanaged)}),可用「扫描收编」接管")
+            warnings.append(f"{label} 有 {len(unmanaged)} 个技能还没进库({few(unmanaged)}),可用「扫描本机技能」接管")
     for t in stale:
         warnings.append(f"项目 {t} 目录已不存在,可在「使用情况」页点\"清理失效项目\"")
     sets_raw = {f.stem: f.read_text() for f in sorted(SETS.glob("*.txt"))}
@@ -639,8 +639,10 @@ def adoptable(e: Path) -> bool:
     return f.exists() and read_link(f) is None
 
 
-def op_scan_local(_b):
-    """扫描全局与各项目的 .claude/.codex/.agents,找出还没进库的技能。纯本地文件遍历。"""
+def op_scan_local(b):
+    """扫描全局与/或各项目的 .claude/.codex/.agents,找出还没进库的技能。纯本地文件遍历。
+    scope: "all"(默认)| "global"(只看 ~/.claude 等全局目录)| "project"(只看已登记项目)。"""
+    scope = b.get("scope") or "all"
     found, seen = [], set()
 
     def check(droot: Path, label: str):
@@ -661,11 +663,13 @@ def op_scan_local(_b):
                           "conflict": (LIB / e.name).exists(),
                           "valid": bool(NAME_RE.match(e.name))})
 
-    for k in KINDS:
-        check(ROOTS[k], f"{k.capitalize()} 全局")
-    for p in read_targets():
+    if scope in ("all", "global"):
         for k in KINDS:
-            check(Path(p) / f".{k}" / "skills", f"{Path(p).name} · .{k}")
+            check(ROOTS[k], f"{k.capitalize()} 全局")
+    if scope in ("all", "project"):
+        for p in read_targets():
+            for k in KINDS:
+                check(Path(p) / f".{k}" / "skills", f"{Path(p).name} · .{k}")
     return {"ok": True, "found": found}
 
 
@@ -733,6 +737,37 @@ def op_open(b):
         return {"ok": False, "out": "技能不存在"}
     open_in_file_manager(p)
     return {"ok": True, "out": "已在文件管理器打开"}
+
+
+def op_pick_dir(b):
+    """弹出系统原生的目录选择框,把选中的路径回填到导入框。仅本地可信环境使用,
+    服务只监听 127.0.0.1,不会被远程触发。"""
+    start = (b.get("start") or "").strip()
+    start = str(Path(start).expanduser()) if start and Path(start).expanduser().is_dir() else str(Path.home())
+    try:
+        if sys.platform == "darwin":
+            r = sh(["osascript", "-e",
+                    f'POSIX path of (choose folder with prompt "选择要导入的目录" '
+                    f'default location (POSIX file "{start}"))'])
+            if r.returncode != 0:
+                return {"ok": False, "out": ""}  # 用户取消,不算错误
+            return {"ok": True, "path": r.stdout.strip()}
+        if os.name == "nt":
+            ps = ("Add-Type -AssemblyName System.Windows.Forms;"
+                  "$f=New-Object System.Windows.Forms.FolderBrowserDialog;"
+                  f"$f.SelectedPath='{start}';"
+                  "if($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK){Write-Output $f.SelectedPath}")
+            r = sh(["powershell", "-NoProfile", "-Command", ps])
+            path = r.stdout.strip()
+            return {"ok": bool(path), "path": path}
+        for cmd in (["zenity", "--file-selection", "--directory", f"--filename={start}/"],
+                    ["kdialog", "--getexistingdirectory", start]):
+            if shutil.which(cmd[0]):
+                r = sh(cmd)
+                return {"ok": r.returncode == 0 and bool(r.stdout.strip()), "path": r.stdout.strip()}
+        return {"ok": False, "out": "没找到系统目录选择器(zenity/kdialog),请在输入框里手动填路径"}
+    except Exception as e:
+        return {"ok": False, "out": f"打开目录选择框失败:{e}"}
 
 
 def op_relink(b):
@@ -896,7 +931,7 @@ POST_OPS = {
     "/api/settings": op_settings, "/api/targets/clean": op_targets_clean,
     "/api/set": op_save_set, "/api/set-delete": op_set_delete,
     "/api/scan": op_scan_local, "/api/adopt-bulk": op_adopt_bulk,
-    "/api/import": op_import, "/api/open": op_open,
+    "/api/import": op_import, "/api/open": op_open, "/api/pick-dir": op_pick_dir,
     "/api/relink": op_relink, "/api/diff": op_diff,
     "/api/source/check": lambda b: {"ok": True, **source_check(b["source"])},
     "/api/source/update": lambda b: source_update(b["source"], b.get("token")),
@@ -1044,6 +1079,24 @@ button.ghost{border-color:transparent;color:var(--muted)}
 button.ghost:hover{color:var(--accent-ink);border-color:transparent;background:var(--accent-soft)}
 button.danger:hover{border-color:var(--bad);color:var(--bad)}
 button:disabled{opacity:.45;cursor:default;pointer-events:none}
+/* ---- 拆分按钮(主操作 + 下拉次选项) ---- */
+.splitbtn{display:inline-flex;position:relative}
+.splitbtn>button{border-radius:var(--rs) 0 0 var(--rs);border-right:none}
+.splitbtn>details.dropdown{position:relative}
+.splitbtn>details.dropdown>summary{list-style:none;display:flex;align-items:center;justify-content:center;
+  width:26px;height:100%;font-size:13px;padding:6px 6px;border-radius:0 var(--rs) var(--rs) 0;
+  border:1px solid var(--line);background:var(--card);color:var(--muted);cursor:pointer;
+  transition:border-color .12s,color .12s}
+.splitbtn>details.dropdown>summary::-webkit-details-marker{display:none}
+.splitbtn>details.dropdown>summary:hover{border-color:var(--accent);color:var(--accent-ink)}
+.splitbtn>details.dropdown[open]>summary{border-color:var(--accent);color:var(--accent-ink)}
+.dropdown-menu{position:absolute;top:calc(100% + 6px);right:0;min-width:220px;z-index:20;
+  background:var(--card);border:1px solid var(--line);border-radius:var(--rs);box-shadow:0 6px 20px rgba(16,24,40,.12);
+  padding:5px;display:flex;flex-direction:column;gap:2px}
+.dropdown-menu button{width:100%;text-align:left;border:none;background:none;padding:7px 9px;
+  border-radius:6px;display:flex;flex-direction:column;gap:1px;align-items:flex-start}
+.dropdown-menu button:hover{background:var(--accent-soft);border-color:transparent;color:var(--ink)}
+.dropdown-menu button .dd-sub{font-size:11px;color:var(--faint);font-weight:400}
 input[type=text],select{font:inherit;font-size:13.5px;padding:7px 11px;
 border:1px solid var(--line);border-radius:var(--rs);background:var(--card);color:var(--ink)}
 input:focus,select:focus,textarea:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
@@ -1232,7 +1285,11 @@ nav_skills:"技能",nav_sets:"组合",nav_usage:"使用情况",nav_sources:"网�
 autostart_on:"管理台常驻 运行中",autostart_off:"管理台常驻 未注册",lang_switch:"EN",
 // 技能页
 h_skills:"技能",sub_skills:"技能保存在库里,删不丢、改全生效。开关拨绿 = 在那个地方能用。",
-btn_open_lib:"打开库目录",btn_scan:"扫描收编",btn_import:"导入目录",btn_add_online:"从网上添加",btn_new_skill:"＋ 新建技能",
+btn_open_lib:"打开库目录",btn_scan:"扫描本机技能",btn_import:"导入目录",btn_browse:"浏览…",btn_add_online:"从网上添加",btn_new_skill:"＋ 新建技能",
+t_scan_range:"在这些位置里找还没进库的技能:",t_scan_range_proj:"已登记项目(各自的 .claude/.codex/.agents/skills):",
+dd_more:"更多扫描范围",dd_scan_global:"只扫描全局目录",dd_scan_global_hint:".claude/skills、.codex/skills、.agents/skills",
+dd_scan_project:"只扫描项目目录",dd_scan_project_empty:"还没有登记任何项目,先在某个技能卡片上点「＋项目」",
+t_import_hint:"导入目录 = 你指定任意目录(单个技能或一堆技能),复制进库,原目录不动。跟「扫描本机技能」的区别:那个只在固定的几个位置(全局 + 已登记项目)里找,这个你想导哪就导哪。",
 ph_search:"搜技能名或描述…",chip_all:"全部",chip_own:"自建",chip_ext:"网上引入",
 empty_skills:"没有匹配的技能",no_desc:"还没写 description",
 pill_claude:"Claude 全局",pill_codex:"Codex 全局",pill_agents:"Agents 全局",pill_add_proj:"＋ 项目",
@@ -1329,7 +1386,11 @@ app_name:"Skills Hub",app_sub:"Manage once · Use everywhere",
 nav_skills:"Skills",nav_sets:"Sets",nav_usage:"Usage",nav_sources:"Sources",nav_settings:"Settings",
 autostart_on:"Service: Running",autostart_off:"Service: Not registered",lang_switch:"中文",
 h_skills:"Skills",sub_skills:"Skills live in the library. Toggle green = available there. Changes propagate everywhere.",
-btn_open_lib:"Open Library",btn_scan:"Scan Local",btn_import:"Import Dir",btn_add_online:"Add Online",btn_new_skill:"＋ New Skill",
+btn_open_lib:"Open Library",btn_scan:"Scan Local Skills",btn_import:"Import Dir",btn_browse:"Browse…",btn_add_online:"Add Online",btn_new_skill:"＋ New Skill",
+t_scan_range:"Looks for unmanaged skills in these locations:",t_scan_range_proj:"Registered projects (each project's .claude/.codex/.agents/skills):",
+dd_more:"More scan scopes",dd_scan_global:"Scan global dirs only",dd_scan_global_hint:".claude/skills, .codex/skills, .agents/skills",
+dd_scan_project:"Scan project dirs only",dd_scan_project_empty:"No registered projects yet — click \"+ Project\" on a skill card first",
+t_import_hint:"Import Dir = pick any directory (one skill, or a folder of skills) and copy it into the library, original untouched. Unlike \"Scan Local Skills\", which only looks in fixed locations (global + registered projects), this can import from anywhere.",
 ph_search:"Search name or description…",chip_all:"All",chip_own:"Own",chip_ext:"Imported",
 empty_skills:"No matching skills",no_desc:"No description yet",
 pill_claude:"Claude Global",pill_codex:"Codex Global",pill_agents:"Agents Global",pill_add_proj:"＋ Project",
@@ -1541,8 +1602,18 @@ function pageSkills(){
   <div class="pagehead"><h1>${t('h_skills')}</h1>
     <span class="acts">
       <button class="ghost" title="${t('btn_open_lib')}" onclick="post('/api/open',{})">${t('btn_open_lib')}</button>
-      <button onclick="scanLocal()">${t('btn_scan')}</button>
-      <button onclick="importDialog()">${t('btn_import')}</button>
+      <span class="splitbtn">
+        <button title="${esc(scanRangeTitle())}" onclick="scanLocal('all')">${t('btn_scan')}</button>
+        <details class="dropdown"><summary title="${t('dd_more')}">▾</summary>
+          <div class="dropdown-menu">
+            <button onclick="this.closest('details').open=false;scanLocal('global')">
+              ${t('dd_scan_global')}<span class="dd-sub">${t('dd_scan_global_hint')}</span></button>
+            <button onclick="this.closest('details').open=false;scanLocal('project')">
+              ${t('dd_scan_project')}<span class="dd-sub">${esc(projRangeHint())}</span></button>
+          </div>
+        </details>
+      </span>
+      <button title="${esc(t('t_import_hint'))}" onclick="importDialog()">${t('btn_import')}</button>
       <button onclick="show('sources')">${t('btn_add_online')}</button>
       <button class="primary" onclick="newSkill()">${t('btn_new_skill')}</button></span>
     <span class="sub">${t('sub_skills')}</span>
@@ -1726,9 +1797,22 @@ function checkRow(f,extra){
     ${bad?`<span class="tag miss">${bad}</span>`:""}</label>`;
 }
 function checkedPaths(sel){return [...document.querySelectorAll(sel+' input:checked')].map(x=>x.dataset.p)}
-async function scanLocal(){
+const GLOBAL_SKILL_DIRS=["~/.claude/skills","~/.codex/skills","~/.agents/skills"];
+function scanRangeTitle(){
+  let lines=[t('t_scan_range'),...GLOBAL_SKILL_DIRS];
+  if(S.projects&&S.projects.length){
+    lines.push(t('t_scan_range_proj'));
+    lines=lines.concat(S.projects.map(p=>`${p}/.{claude,codex,agents}/skills`));
+  }
+  return lines.join("\n");
+}
+function projRangeHint(){
+  return S.projects&&S.projects.length?S.projects.join("、"):t('dd_scan_project_empty');
+}
+async function scanLocal(scope){
+  if(scope==="project"&&(!S.projects||!S.projects.length)){toast(t('dd_scan_project_empty'));return}
   toast(t('m_scan_toast'));
-  const r=await post("/api/scan",{});
+  const r=await post("/api/scan",{scope});
   const list=r.found||[];
   if(!list.length){toast(t('m_scan_none'));return}
   askDialog(tf('m_scan_t',{COUNT:list.length}),t('m_scan_h'),
@@ -1738,8 +1822,16 @@ async function scanLocal(){
 function importDialog(){
   askDialog(t('m_import_t'),t('m_import_h'),
    `<div class="row"><input type="text" id="impPath" style="flex:1;min-width:0" placeholder="${t('m_imp_ph')}">
+    <button onclick="pickImportDir()">${t('btn_browse')}</button>
     <button onclick="impProbe()">${t('m_import_find')}</button></div><div id="impList" style="margin-top:8px"></div>`,
    async()=>{const ps=checkedPaths("#impList");if(ps.length)await post("/api/import",{paths:ps})});
+}
+async function pickImportDir(){
+  const r=await post("/api/pick-dir",{start:$("#impPath").value.trim()});
+  if(!r.ok){if(r.out)toast(r.out);return}
+  if(!r.path)return;  // 用户取消
+  $("#impPath").value=r.path;
+  await impProbe();
 }
 async function impProbe(){
   const p=$("#impPath").value.trim();if(!p)return;
@@ -1922,6 +2014,12 @@ document.addEventListener("click",e=>{
   card.classList.toggle("on",cb.checked);
 });
 async function saveEditor(){await post("/api/skill",{name:ED.name,content:$("#edBody").value});editor.close()}
+// 点下拉外面收起(<details> 默认不会自己收)
+document.addEventListener("click",e=>{
+  document.querySelectorAll("details.dropdown[open]").forEach(d=>{
+    if(!d.contains(e.target))d.open=false;
+  });
+});
 
 load();
 </script></body></html>

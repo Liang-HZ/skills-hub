@@ -28,6 +28,9 @@ DATA = json.loads((ROOT / "tools" / "demo-data.json").read_text(encoding="utf-8"
 OUT = ROOT / "site" / "index.html"
 REPO = "https://github.com/Liang-HZ/skills-hub"
 
+# 统计脚本只出现在这里,不能进 webui.py:webui.py 是跑在使用者自己机器上的管理器,
+# 给它加统计等于让一个本地工具往外回传。模拟板是 skills.liangai.org 上的公开页面,
+# 统计的是访客,不是任何人的技能库。website id 非密钥,可公开提交。
 HEAD = """<title>Skills Hub — interactive demo · 技能库在线模拟</title>
 <meta name="description" content="Try Skills Hub in your browser: one local library for every AI agent skill (Claude Code / Codex / OpenCode), with real per-skill trigger counts. This is a simulation — nothing touches your machine.">
 <meta property="og:title" content="Skills Hub — interactive demo">
@@ -36,7 +39,8 @@ HEAD = """<title>Skills Hub — interactive demo · 技能库在线模拟</title
 <meta property="og:url" content="https://skills.liangai.org">
 <meta property="og:image" content="https://skills.liangai.org/screenshot.png">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://skills.liangai.org/screenshot.png">"""
+<meta name="twitter:image" content="https://skills.liangai.org/screenshot.png">
+<script defer src="https://analytics.liangai.org/script.js" data-website-id="3c57e0ff-fa6c-4da7-85f9-a310036c21fa"></script>"""
 
 # ---- 假后端:在 app 脚本之前覆写 fetch ----
 SHIM = r"""

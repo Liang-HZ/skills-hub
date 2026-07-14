@@ -1,18 +1,21 @@
 # Skills Hub · 技能库
 
-**一处管理所有 AI agent 技能——本地网页统一开关、组合、更新。**
+**你装了一堆 agent 技能。到底哪些真的被触发过?**
 
-[English →](README.md)
+Skills Hub 把本机所有 AI agent 技能收进一个本地库,并用真实数字回答这个问题——它读 Claude Code、Codex、OpenCode 各自的本地会话记录,数出每个技能实际被触发了多少次。开关、组合、更新都在同一个本地网页里完成。
 
-![Skills Hub 界面](docs/screenshot.png)
+[打开在线模拟 →](https://skills.liangai.org) · [English →](README.md)
+
+![Skills Hub 用量分析:每个技能在 Claude Code / Codex / OpenCode 上的真实触发次数,从未触发过的技能一目了然](docs/screenshot.png)
 
 所有技能(带 `SKILL.md` 的文件夹)的唯一真源放在本机的 `library/`,再链接到各个 agent 找技能的地方——Claude Code(`~/.claude/skills`)、Codex(`~/.codex/skills`)、通用 Agents(`~/.agents/skills`)或任意项目目录。改一处、处处生效;关掉开关只是摘链接,技能永远安全地留在库里。
 
+- **真实触发次数,不是估算**——每个技能今天/近7天/近30天/累计的用量,可按 agent 拆分,直接读各 agent 自己的本地记录。从没用过的技能会自己沉到列表底部。
+- **一个库,喂所有 agent**——Claude Code、Codex、OpenCode,或任何会读技能目录的工具;全局或按项目都行。
 - **单文件,无需 npm/pip 安装**--只需 Python 3.9+ 和 Git。一个文件,一条命令。未安装 Git 时会显示安装引导。
-- **纯本地**——只监听 `127.0.0.1:7799`,任何数据不出机器。
-- **跨平台**——macOS / Linux 用软链接;Windows 依次尝试 symlink → junction → 副本。
+- **纯本地**——只监听 `127.0.0.1:7799`,不上传任何数据,所有数据源只读不改。
 - **步步可回退**——每次变更自动进本地 git 历史;删除只进回收站,从不真删。
-- **中英双语界面**——自动按浏览器语言选中文/英文,右上角随时切换。
+- **跨平台 + 中英双语界面**——macOS / Linux 用软链接;Windows 依次尝试 symlink → junction → 副本;自动按浏览器语言切换。
 
 ## 快速开始
 
@@ -88,6 +91,8 @@ targets.txt            用过技能的项目目录注册表
 attic/trash/           "删除"实际去的地方
 usage_log.py           触发次数扫描(读各 agent 会话记录,聚合进 .state/)
 .state/                本地派生数据(用量统计缓存),已 gitignore,可随时重建
+site/                  skills.liangai.org 上的在线模拟板(编译产物,不是手写的)
+tools/build_demo.py    把 webui.py 的真实界面编译成那个模拟板(后端换成浏览器内存假数据)
 ```
 
 技能与组合的每次变更自动提交进本地 git(只提交 `library/` 和 `sets/`),这就是你的撤销路径。想把数据放在代码目录之外:设置 `SKILLS_HUB_ROOT=/你的数据目录`,应用会在那里单独初始化数据仓库,升级时 `git pull` 毫无纠缠。

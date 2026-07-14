@@ -1,18 +1,21 @@
 # Skills Hub
 
-**One library for all your AI agent skills — manage, toggle, and update them from a single local web UI.**
+**You've installed a pile of agent skills. Which ones actually fire?**
 
-[中文文档 →](README.zh-CN.md)
+Skills Hub keeps every AI agent skill on your machine in one local library — and answers that question with real numbers, by reading Claude Code's, Codex's and OpenCode's own session logs to count how often each skill was actually triggered. Manage, toggle, group and update all of them from a single local web UI.
 
-![Skills Hub UI](docs/screenshot-en.png)
+[Try the interactive demo →](https://skills.liangai.org) · [中文文档 →](README.zh-CN.md)
 
-Skills Hub keeps every skill (a folder with a `SKILL.md`) in one local library and links it into wherever your agents look for skills — Claude Code (`~/.claude/skills`), Codex (`~/.codex/skills`), generic Agents (`~/.agents/skills`), or any project directory. Edit once, effective everywhere; delete a link, the skill stays safe in the library.
+![Skills Hub usage insights: per-skill trigger counts across Claude Code, Codex and OpenCode, with never-triggered skills called out](docs/screenshot-en.png)
 
-- **Single-file, no npm/pip install** - Python 3.9+ and Git are the only requirements. One file, one command.
-- **Local-first** — a loopback-only HTTP server (`127.0.0.1:7799`). Nothing leaves your machine.
-- **Cross-platform** — macOS / Linux (symlinks), Windows (symlink → junction → copy fallback).
+Every skill (a folder with a `SKILL.md`) has a single source of truth in a local `library/`, linked into wherever your agents look for skills — Claude Code (`~/.claude/skills`), Codex (`~/.codex/skills`), generic Agents (`~/.agents/skills`), or any project directory. Edit once, effective everywhere; flip a toggle off and the skill stays safe in the library.
+
+- **Real trigger counts, not guesses** — per-skill usage across today / 7d / 30d / all time, split by agent, read straight from each agent's own local logs. The skills you never actually use sort themselves to the bottom.
+- **One library, every agent** — Claude Code, Codex, OpenCode, or anything else that reads a skills directory. Globally or per project.
+- **Single-file, no npm/pip install** — Python 3.9+ and Git are the only requirements. One file, one command.
+- **Local-first** — a loopback-only HTTP server (`127.0.0.1:7799`). Nothing is uploaded; every data source is read-only.
 - **Everything is undoable** — every change is committed to a local git history; deletes go to a trash folder, never `rm -rf`.
-- **Bilingual UI** — auto-detects Chinese/English from your browser, switch anytime from the top-right corner.
+- **Cross-platform, bilingual UI** — macOS / Linux (symlinks), Windows (symlink → junction → copy fallback); auto-detects Chinese/English.
 
 ## Quick start
 
@@ -88,6 +91,8 @@ targets.txt            registry of project dirs that use skills
 attic/trash/           where "deleted" skills actually go
 usage_log.py           trigger-count scanner (reads agent session logs, aggregates into .state/)
 .state/                local derived data (usage stats cache) — gitignored, rebuildable
+site/                  the browser demo published at skills.liangai.org (built, not hand-written)
+tools/build_demo.py    compiles webui.py's real UI into that static demo (fake in-memory backend)
 ```
 
 Your skills and sets are auto-committed to the local git history (only `library/` and `sets/`), which is your undo path. To keep your data outside the code checkout, set `SKILLS_HUB_ROOT=/path/to/data` — the app will initialize a separate data repo there and `git pull` upgrades stay trivial.

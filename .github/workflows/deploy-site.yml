@@ -1,15 +1,26 @@
-# 部署 site/ 落地页到 Cloudflare Pages(模板来源:liangai-ops/templates/workflows/cf-pages-deploy.yml)
+# 部署 site/(skills.liangai.org 的在线模拟板)到 Cloudflare Pages
+# (模板来源:liangai-ops/templates/workflows/cf-pages-deploy.yml)
 #
 # 前置条件:
 # - GitHub secret CLOUDFLARE_API_TOKEN 已配置(需要 Pages 部署权限)
 # - Cloudflare Pages 项目 skills-liangai 已在面板建好,并绑定 skills.liangai.org
+#
+# site/index.html 是**编译产物**:由 tools/build_demo.py 从 webui.py 的真实界面生成。
+# 所以这里每次都现场重建再部署 —— 仓库里那份只是最近一次构建的留档,
+# 真相永远是 webui.py。同理,webui.py 一改,这个 workflow 也要重跑,故列进 paths。
 
 name: 部署落地页到 Cloudflare Pages
 
 on:
   push:
     branches: [main]
-    paths: ["site/**", ".github/workflows/deploy-site.yml"]
+    paths:
+      - "site/**"
+      - "webui.py"
+      - "tools/build_demo.py"
+      - "tools/demo-data.json"
+      - ".github/workflows/deploy-site.yml"
+  workflow_dispatch:   # 配好 secret 后可手动补跑一次
 
 concurrency:
   group: deploy-cloudflare-pages
@@ -23,6 +34,14 @@ jobs:
       - name: 检出仓库
         uses: actions/checkout@v4
 
+      - name: 安装 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 从 webui.py 重建模拟板
+        run: python3 tools/build_demo.py
+
       - name: 安装 Node.js
         uses: actions/setup-node@v4
         with:
@@ -33,3 +52,11 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: fe15c2c6bceaa6066bce8cb02965b896  # 非密钥,liangai 体系统一账号
+
+      - name: 冒烟:线上确实是模拟板而不是别的东西
+        run: |
+          sleep 5
+          body=$(curl -sS --retry 3 --retry-delay 5 https://skills.liangai.org)
+          echo "$body" | grep -q 'id="demo-backend"' || { echo "线上页面没有模拟板后端"; exit 1; }
+          echo "$body" | grep -q 'Skills Hub' || { echo "线上页面标题不对"; exit 1; }
+          echo "冒烟通过"

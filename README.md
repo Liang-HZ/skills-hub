@@ -38,8 +38,25 @@ The UI needs three sentences to understand:
 | Skills | Create, edit, import, adopt stray skills found on your machine (native directory picker or type a path); toggle where each one is enabled |
 | Sets | Group skills you always use together; enable/disable a whole set in one click |
 | Usage | See what's enabled where (global roots and every project), clean up dead projects |
+| Insights | Rank skills by references and by how often they were actually triggered, over today / 7d / 30d / all time |
 | Sources | Clone third-party skill repos into an isolated `vendor/` area, cherry-pick skills as snapshots, and update them manually |
 | Settings | Behavior options |
+
+### Usage stats: where the numbers come from
+
+Two independent measures, both computed locally — nothing is uploaded, and every data source is read-only:
+
+- **References** — how many places currently have the skill switched on (global roots + per-project). Derived live from the toggles; nothing extra is stored.
+- **Triggers** — how often a skill was actually invoked, by incrementally scanning each agent's own local session logs into `.state/usage.sqlite3` (Python's stdlib `sqlite3`; no new dependency). Signal quality differs per agent, so the source is stated rather than blurred together:
+
+| Agent | Source | Signal |
+|-------|--------|--------|
+| Claude Code | `~/.claude/projects/**/*.jsonl` | Exact — a structured `Skill` tool call per invocation |
+| OpenCode | `~/.local/share/opencode/opencode.db` | Exact — the built-in `skill` tool call |
+| Codex | `~/.codex/sessions/**/*.jsonl` | **Heuristic** — Codex has no dedicated skill tool, so this counts commands that reference a `.../<name>/SKILL.md` path. Rougher than the others (reading a skill and acting on it look the same) |
+| Cursor | — | Not supported yet: its local store is an unofficial, reverse-engineered `state.vscdb` format that could break silently on upgrade |
+
+Scanning is incremental (byte offsets for log files, a rowid high-water mark for OpenCode), so nothing is double-counted and a half-written record is never parsed. The first run walks your existing history and may take a few seconds; after that it's instant.
 
 ### The sovereignty model for third-party skills
 
@@ -69,6 +86,8 @@ sets/                  skill groups, one name per line
 vendor/                isolated clones of third-party repos (never live)
 targets.txt            registry of project dirs that use skills
 attic/trash/           where "deleted" skills actually go
+usage_log.py           trigger-count scanner (reads agent session logs, aggregates into .state/)
+.state/                local derived data (usage stats cache) — gitignored, rebuildable
 ```
 
 Your skills and sets are auto-committed to the local git history (only `library/` and `sets/`), which is your undo path. To keep your data outside the code checkout, set `SKILLS_HUB_ROOT=/path/to/data` — the app will initialize a separate data repo there and `git pull` upgrades stay trivial.

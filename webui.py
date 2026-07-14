@@ -35,6 +35,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote
 
+import usage_log
+
 HUB = Path(os.environ.get("SKILLS_HUB_ROOT") or Path(__file__).resolve().parent)
 LIB = HUB / "library"
 SETS = HUB / "sets"
@@ -154,6 +156,23 @@ def desc_of(name: str) -> str:
         return parse_desc((LIB / name / "SKILL.md").read_text())
     except OSError:
         return ""
+
+
+def skill_times(d: Path):
+    """(创建时间, 更新时间) epoch 秒。创建时间优先用文件系统 birthtime(macOS/BSD 有,
+    Linux 多数没有则回落 ctime);更新时间取技能目录自身 mtime 与 SKILL.md mtime 的较大值
+    —— 目录 mtime 捕获增删文件,SKILL.md mtime 捕获页面里改内容,两者取大即"最后一次动过"。"""
+    try:
+        st = d.stat()
+    except OSError:
+        return None, None
+    created = getattr(st, "st_birthtime", None) or st.st_ctime
+    updated = st.st_mtime
+    try:
+        updated = max(updated, (d / "SKILL.md").stat().st_mtime)
+    except OSError:
+        pass
+    return created, updated
 
 
 def open_in_file_manager(p: Path):
@@ -501,8 +520,9 @@ def api_state():
         places = {k: entry_state(ROOTS[k] / dname, dname) for k in KINDS}
         places["projects"] = {t["target"]: entry_state(
             Path(t["path"]) / f".{t['kind']}" / "skills" / dname, dname) for t in proj_targets}
+        created, updated = skill_times(d)
         skills.append({"name": dname, "desc": desc_of(dname), "origin": org.get(dname),
-                       "places": places})
+                       "places": places, "created": created, "updated": updated})
     # warnings 用结构化数据(kind/target/names),不在后端拼中文文案——
     # 拼文案在前端按当前语言(zh/en)做,否则切到英文界面时这些提示还是中文,见 warningsHtml()。
     warnings = []
@@ -1064,6 +1084,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({"ok": False, "out": L(b, "技能不存在", "Skill not found")}, 404)
             self._json({"ok": True, "content": f.read_text(),
                         "readonly": (origins().get(name) or {}).get("type") == "ref"})
+        elif path == "/api/usage":
+            try:
+                self._json({"ok": True, "skills": usage_log.stats()})
+            except Exception as e:
+                self._json({"ok": False, "out": L(b, f"统计失败: {e}", f"Failed to compute usage stats: {e}")}, 500)
         else:
             self._json({"ok": False, "out": "not found"}, 404)
 
@@ -1159,6 +1184,7 @@ button.ghost{border-color:transparent;color:var(--muted)}
 button.ghost:hover{color:var(--accent-ink);border-color:transparent;background:var(--accent-soft)}
 button.danger:hover{border-color:var(--bad);color:var(--bad)}
 button:disabled{opacity:.45;cursor:default;pointer-events:none}
+.sortdir{min-width:34px;padding:7px 8px;font-size:15px;line-height:1;text-align:center;border-color:var(--line)}
 /* ---- 拆分按钮(主操作 + 下拉次选项) ---- */
 .splitbtn{display:inline-flex;position:relative}
 .splitbtn>button{border-radius:var(--rs) 0 0 var(--rs);border-right:none}
@@ -1195,6 +1221,26 @@ border-radius:99px;border:1px solid var(--line);color:var(--muted);white-space:n
 .tag.src-copy{background:var(--accent-soft);color:var(--accent-ink);border-color:transparent}
 .tag.done{background:var(--okbg);color:var(--ok);border-color:transparent}
 .tag.miss{color:var(--bad);border-color:var(--bad)}
+.usage-badge{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;padding:1px 8px;flex:none;
+border-radius:99px;font-weight:700;font-variant-numeric:tabular-nums;cursor:default;position:relative}
+.usage-badge.hot{background:var(--accent-soft);color:var(--accent-ink);cursor:help}
+.usage-badge.cold{background:transparent;color:var(--faint);font-weight:500;border:1px solid var(--line)}
+.bar-num:has(.usage-hovercard){cursor:help}
+/* 纯 CSS 悬浮卡:锚在触发元素上、绝对定位,不用 JS 摆位,所以绝不会跳/漂移 */
+.usage-hovercard{position:absolute;z-index:60;top:calc(100% + 8px);left:50%;
+opacity:0;visibility:hidden;transform:translateX(-50%) translateY(-4px);
+transition:opacity .13s ease,transform .13s ease;pointer-events:none;
+background:var(--card);border:1px solid var(--line);border-radius:10px;
+box-shadow:0 8px 24px rgba(0,0,0,.16);padding:10px 12px;min-width:158px;text-align:left;
+white-space:nowrap;font-weight:400;font-size:12px}
+.usage-badge:hover .usage-hovercard,.bar-num:hover .usage-hovercard{
+opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+.uhc-bar{display:flex;height:6px;border-radius:3px;overflow:hidden;background:var(--panel);margin-bottom:8px}
+.uhc-bar span{height:100%}
+.uhc-row{display:flex;align-items:center;gap:6px;color:var(--muted);padding:2px 0}
+.uhc-dot{width:7px;height:7px;border-radius:50%;flex:none}
+.uhc-row b{margin-left:auto;color:var(--ink);font-variant-numeric:tabular-nums;font-weight:700}
+.uhc-pct{color:var(--faint);font-size:11px;min-width:32px;text-align:right}
 
 /* ---- 技能卡(紧凑两列,同「使用情况」) ---- */
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 2px}
@@ -1230,6 +1276,8 @@ user-select:none;background:var(--card);transition:border-color .12s}
 .pill.warn{border-color:var(--warn);color:var(--warn)}
 .pill.add{border-style:dashed;color:var(--faint)}
 .pills{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-top:auto}
+.sk-meta{margin-top:9px;font-size:10.5px;color:var(--faint);display:flex;flex-wrap:wrap;gap:3px 14px;cursor:default}
+.sk-meta b{font-weight:500;color:var(--muted);margin-right:4px}
 
 /* ---- 使用情况 ---- */
 .usegrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
@@ -1241,6 +1289,44 @@ padding:15px 17px;box-shadow:var(--shadow)}
 .usecard .path{font-size:11.5px;color:var(--faint);margin:1px 0 10px;word-break:break-all}
 .loc-ico{width:26px;height:26px;border-radius:7px;background:var(--accent-soft);color:var(--accent-ink);
 display:flex;align-items:center;justify-content:center;font-size:13px;flex:none}
+/* ---- 用量分析 ---- */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0 22px}
+@media(max-width:820px){.kpi-grid{grid-template-columns:1fr 1fr}}
+.kpi-card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+padding:16px 17px;box-shadow:var(--shadow);overflow:hidden}
+.kpi-card.hero::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;
+background:linear-gradient(90deg,var(--accent),#8b6ff0)}
+.kpi-label{font-size:11.5px;color:var(--muted);font-weight:600;letter-spacing:.3px;text-transform:uppercase}
+.kpi-num{font-size:26px;font-weight:700;margin-top:6px;font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+.kpi-sub{font-size:12px;color:var(--faint);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.segmented{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px}
+.segmented button{border:none;background:none;color:var(--muted);font:inherit;font-size:12.5px;font-weight:600;
+padding:5px 13px;border-radius:999px;cursor:pointer;transition:background .15s,color .15s}
+.segmented button:hover{color:var(--ink)}
+.segmented button.active{background:var(--accent);color:#fff}
+.lb-table{width:100%;border-collapse:collapse;font-size:13px}
+.lb-table th{text-align:left;color:var(--muted);font-weight:600;font-size:11px;letter-spacing:.2px;
+text-transform:uppercase;padding:0 10px 9px;border-bottom:1px solid var(--line)}
+.lb-table td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+.lb-table tr:last-child td{border-bottom:none}
+.lb-table tbody tr{transition:background .12s}
+.lb-table tbody tr:hover{background:var(--accent-soft)}
+.lb-table td.num,.lb-table th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.lb-table td.strong{font-weight:700;color:var(--accent-ink)}
+.lb-table tr.muted-row td{color:var(--faint)}
+.lb-name{display:flex;align-items:center;gap:8px;min-width:0}
+.lb-name b{font:12.5px ui-monospace,Menlo,Consolas,monospace;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rank-badge{flex:none;width:20px;height:20px;border-radius:6px;font-size:10.5px;font-weight:700;
+display:flex;align-items:center;justify-content:center;background:var(--panel);color:var(--faint)}
+.rank-badge.r1{background:var(--accent);color:#fff}
+.rank-badge.r2,.rank-badge.r3{background:var(--accent-soft);color:var(--accent-ink)}
+.bar-cell{min-width:140px}
+.bar-row{display:flex;align-items:center;gap:9px}
+.bar-track{flex:1;height:7px;border-radius:4px;background:var(--panel);overflow:hidden}
+.bar-fill{height:100%;background:linear-gradient(90deg,var(--accent-soft),var(--accent));border-radius:4px;
+transition:width .5s cubic-bezier(.16,1,.3,1)}
+.bar-num{position:relative;flex:none;min-width:24px;text-align:right;font-weight:700;color:var(--accent-ink);font-variant-numeric:tabular-nums}
+.untracked-note{margin-top:12px}
 
 /* ---- 来源 ---- */
 .srcskill{display:flex;gap:8px;align-items:baseline;padding:7px 0;border-bottom:1px dashed var(--line);flex-wrap:wrap}
@@ -1352,6 +1438,11 @@ const esc=s=>(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&q
 const base=p=>p.split(/[\\/]/).filter(Boolean).pop();
 const TOKEN="__CSRF__";
 let S=null, TAB=localStorage.getItem("tab")||"skills", FILTER="all", ED=null, SE_ORIG=null;
+let SKILL_SORT=localStorage.getItem("sk_sort")||"name";
+if(SKILL_SORT==="default")SKILL_SORT="name";   // 兼容旧 localStorage
+const SORT_DEFAULT_DIR={name:"asc",refs:"desc",uses:"desc",created:"desc",updated:"desc"};
+let SKILL_DIR=localStorage.getItem("sk_dir")||SORT_DEFAULT_DIR[SKILL_SORT]||"desc";
+let USAGE=null, USAGE_LOADING=false;
 let LANG=localStorage.getItem("lang")||detectLang();
 function detectLang(){
   const bl=(navigator.language||navigator.languages?.[0]||"").toLowerCase();
@@ -1371,7 +1462,11 @@ dd_more:"更多扫描范围",dd_scan_global:"只扫描全局目录",dd_scan_glob
 dd_scan_project:"只扫描项目目录",dd_scan_project_empty:"还没有登记任何项目,先在某个技能卡片上点「＋项目」",
 t_import_hint:"导入目录 = 你指定任意目录(单个技能或一堆技能),复制进库,原目录不动。跟「扫描本机技能」的区别:那个只在固定的几个位置(全局 + 已登记项目)里找,这个你想导哪就导哪。",
 ph_search:"搜技能名或描述…",chip_all:"全部",chip_own:"自建",chip_ext:"网上引入",
+sort_label:"排序",sort_name:"名称",sort_refs:"引用数",sort_uses:"触发次数",sort_created:"创建时间",sort_updated:"更新时间",
+sort_dir_asc:"当前正序,点击切为倒序",sort_dir_desc:"当前倒序,点击切为正序",
+meta_created:"创建",meta_updated:"更新",
 empty_skills:"没有匹配的技能",no_desc:"还没写 description",
+agent_claude:"Claude Code",agent_codex:"Codex",agent_opencode:"OpenCode",
 pill_claude:"Claude 全局",pill_codex:"Codex 全局",pill_agents:"Agents 全局",pill_add_proj:"＋ 项目",
 t_edit:"编辑",t_view:"查看",t_check_update:"检查上游更新",t_fork:"转为独立副本,以后可编辑,不再跟随来源",t_delete:"删除",
 t_open_dir:"打开这个技能的文件夹,放脚本等其他文件",t_open_dir_btn:"打开目录",
@@ -1400,6 +1495,18 @@ empty_proj_new:"还没有项目在用技能。在「技能」页点某个技能�
 use_n_skills:"个技能",use_no_skill:"这里没开任何技能",use_pick:"＋ 开启技能",use_close_title:"点击在这里关闭",
 cc_claude:"Claude Code(全局)",cc_codex:"Codex(全局)",cc_agents:"Agents(通用,全局)",
 stale_proj:"失效项目(目录已不存在):",
+// 用量分析页
+nav_insights:"用量分析",h_insights:"用量分析",
+sub_insights:"引用数按当前开关状态实时算;触发次数来自 Claude Code / Codex / OpenCode 的本地会话记录(Cursor 暂不支持)。Codex 没有专门的技能调用记录,数的是命令里出现 SKILL.md 路径的次数,会比实际更粗略。首次统计要扫一遍本机历史会话,可能要几秒。",
+btn_refresh_usage:"刷新统计",lb_scanning:"统计中…(首次扫描可能要几秒)",lb_empty:"还没有可统计的技能",
+range_today:"今天",range_d7:"近7天",range_d30:"近30天",range_total:"累计",
+kpi_period:"所选时段触发",kpi_period_sub:"覆盖 COUNT 个技能",
+kpi_top:"最活跃技能",kpi_top_sub:"COUNT 次·NAME",kpi_none:"暂无数据",
+kpi_covered:"已触发覆盖率",kpi_covered_sub:"HIT / TOTAL 个已入库技能",
+kpi_never:"从未触发",kpi_never_sub:"占入库技能 PCT%",
+sort_by_refs:"按引用数排序",sort_by_metric:"按触发次数排序",
+col_skill:"技能",col_ref_global:"全局引用",col_ref_proj:"项目引用",col_last:"最后一次",lb_never:"从未触发",
+lb_untracked:"另有 COUNT 个未入库的技能也被触发过,共 N 次",
 // 来源页
 h_sources:"网上来源",
 sub_sources:"别人的技能仓库先下载到本机隔离目录,挑着引入;引入的是当时内容的快照。下载、检查更新、合入更新都只在你点击时发生。",
@@ -1478,7 +1585,11 @@ dd_more:"More scan scopes",dd_scan_global:"Scan global dirs only",dd_scan_global
 dd_scan_project:"Scan project dirs only",dd_scan_project_empty:"No registered projects yet — click \"+ Project\" on a skill card first",
 t_import_hint:"Import Dir = pick any directory (one skill, or a folder of skills) and copy it into the library, original untouched. Unlike \"Scan Local Skills\", which only looks in fixed locations (global + registered projects), this can import from anywhere.",
 ph_search:"Search name or description…",chip_all:"All",chip_own:"Own",chip_ext:"Imported",
+sort_label:"Sort",sort_name:"Name",sort_refs:"References",sort_uses:"Triggers",sort_created:"Created",sort_updated:"Updated",
+sort_dir_asc:"Ascending — click for descending",sort_dir_desc:"Descending — click for ascending",
+meta_created:"Created",meta_updated:"Updated",
 empty_skills:"No matching skills",no_desc:"No description yet",
+agent_claude:"Claude Code",agent_codex:"Codex",agent_opencode:"OpenCode",
 pill_claude:"Claude Global",pill_codex:"Codex Global",pill_agents:"Agents Global",pill_add_proj:"＋ Project",
 t_edit:"Edit",t_view:"View",t_check_update:"Check upstream for updates",t_fork:"Convert to standalone copy (editable, no longer follows source)",t_delete:"Delete",
 t_open_dir:"Open this skill's folder to add scripts and other files",t_open_dir_btn:"Open Dir",
@@ -1503,6 +1614,17 @@ empty_proj_new:"No projects using skills yet. Click ＋ Project on a skill in th
 use_n_skills:"skills",use_no_skill:"No skills enabled here",use_pick:"＋ Enable Skill",use_close_title:"Click to disable here",
 cc_claude:"Claude Code (global)",cc_codex:"Codex (global)",cc_agents:"Agents (general, global)",
 stale_proj:"Stale projects (directory no longer exists): ",
+nav_insights:"Insights",h_insights:"Usage Insights",
+sub_insights:"Reference counts are computed live from current toggles. Trigger counts come from local session logs of Claude Code / Codex / OpenCode (Cursor not supported yet). Codex has no dedicated skill-call log, so it counts how often a SKILL.md path shows up in its commands — rougher than the others. The first run scans local session history and may take a few seconds.",
+btn_refresh_usage:"Refresh Stats",lb_scanning:"Scanning… (first run may take a few seconds)",lb_empty:"No skills to show yet",
+range_today:"Today",range_d7:"7 days",range_d30:"30 days",range_total:"All time",
+kpi_period:"Triggers in range",kpi_period_sub:"across COUNT skills",
+kpi_top:"Most active skill",kpi_top_sub:"COUNT uses · NAME",kpi_none:"No data yet",
+kpi_covered:"Skills ever triggered",kpi_covered_sub:"HIT / TOTAL in library",
+kpi_never:"Never triggered",kpi_never_sub:"PCT% of library",
+sort_by_refs:"Sort by refs",sort_by_metric:"Sort by triggers",
+col_skill:"Skill",col_ref_global:"Global refs",col_ref_proj:"Project refs",col_last:"Last used",lb_never:"Never",
+lb_untracked:"COUNT more skill(s) outside the library were also triggered, N times total",
 h_sources:"Online Sources",
 sub_sources:"Clone skill repos to an isolated local directory, then pick skills to import. Imports are snapshots of the current version. Downloads and updates only happen when you click.",
 sub_sources_b:"This tool manages only — it does not vet third-party content. Read before importing or updating.",
@@ -1587,7 +1709,15 @@ function typing(){ // 正在页面内的输入框里打字时,刷新不要重渲
 async function load(){S=await (await fetch("/api/state")).json();
   if(typing())renderNav();else render()}
 
-function show(t){TAB=t;localStorage.setItem("tab",t);render()}
+function show(t){TAB=t;localStorage.setItem("tab",t);if(t==="insights")loadUsage();render()}
+async function loadUsage(){
+  if(USAGE_LOADING)return;
+  USAGE_LOADING=true;
+  try{const j=await fetch("/api/usage").then(r=>r.json());if(j.ok)USAGE=j.skills}
+  catch(e){}
+  finally{USAGE_LOADING=false}
+  if(!typing())render();
+}
 
 /* ---------- 徽章 ---------- */
 function trunc(s,n){return s&&s.length>n?s.slice(0,n)+"…":s||""}
@@ -1624,13 +1754,15 @@ skills:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width=
 sets:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l9 5-9 5-9-5 9-5z"/><path d="M3 12l9 5 9-5"/><path d="M3 17l9 5 9-5"/></svg>',
 usage:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h6l2-7 4 14 2-7h4"/></svg>',
 sources:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.7 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.7-3.8-9S9.5 5.6 12 3z"/></svg>',
-settings:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.01a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55h.01a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.01a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1z"/></svg>'};
+settings:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.01a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55h.01a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.01a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1z"/></svg>',
+insights:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><rect x="7" y="13" width="3" height="5" rx="1"/><rect x="12.5" y="8" width="3" height="10" rx="1"/><rect x="18" y="4" width="3" height="14" rx="1"/></svg>'};
 
 function renderNav(){
   const items=[
     ["skills",t('nav_skills'),`<span class="cnt">${S.skills.length}</span>`],
     ["sets",t('nav_sets'),`<span class="cnt">${Object.keys(S.sets).length||""}</span>`],
     ["usage",t('nav_usage'),""],
+    ["insights",t('nav_insights'),""],
     ["sources",t('nav_sources'),""],
     ["settings",t('nav_settings'),""]];
   $("#nav").innerHTML=items.map(([id,label,extra])=>
@@ -1683,13 +1815,45 @@ function projLabel(t){ // "path::kind" -> "目录名(·kind,claude 不标)"
   const [p,kind]=t.split("::");
   return base(p)+(kind&&kind!=="claude"?" ·"+kind:"");
 }
+function skillUses(k){return (USAGE&&USAGE[k.name]&&USAGE[k.name].total)||0}
+function skillRefs(k){const r=refCounts(k);return r.g+r.p}
+function fmtDate(ts){if(!ts)return "";const d=new Date(ts*1000),p=n=>String(n).padStart(2,"0");
+  return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())}
+function fmtDateTime(ts){if(!ts)return "";const d=new Date(ts*1000),p=n=>String(n).padStart(2,"0");
+  return fmtDate(ts)+" "+p(d.getHours())+":"+p(d.getMinutes())}
+function fmtDateTimeSec(ts){if(!ts)return "";const d=new Date(ts*1000),p=n=>String(n).padStart(2,"0");
+  return fmtDateTime(ts)+":"+p(d.getSeconds())}
+function skillMeta(k){
+  const parts=[];
+  if(k.created)parts.push(`<span title="${t('meta_created')} ${fmtDateTimeSec(k.created)}"><b>${t('meta_created')}</b>${fmtDateTime(k.created)}</span>`);
+  // 只有确实晚于创建 60 秒以上才算"更新过"——避开建库时写文件带来的几秒抖动
+  if(k.updated&&(!k.created||k.updated-k.created>60))
+    parts.push(`<span title="${t('meta_updated')} ${fmtDateTimeSec(k.updated)}"><b>${t('meta_updated')}</b>${fmtDateTime(k.updated)}</span>`);
+  return parts.length?`<div class="sk-meta">${parts.join("")}</div>`:"";
+}
+function sortSkills(list){
+  const cmp={
+    name:(a,b)=>a.name.localeCompare(b.name),
+    refs:(a,b)=>skillRefs(a)-skillRefs(b),
+    uses:(a,b)=>skillUses(a)-skillUses(b),
+    created:(a,b)=>(a.created||0)-(b.created||0),
+    updated:(a,b)=>(a.updated||0)-(b.updated||0),
+  }[SKILL_SORT]||((a,b)=>a.name.localeCompare(b.name));
+  const dir=SKILL_DIR==="asc"?1:-1;
+  // 方向只作用于主键;并列一律按名称 A→Z,稳定不抖
+  return [...list].sort((a,b)=>{const c=cmp(a,b)*dir;return c!==0?c:a.name.localeCompare(b.name)});
+}
+function setSkillSort(v){SKILL_SORT=v;SKILL_DIR=SORT_DEFAULT_DIR[v]||"desc";
+  localStorage.setItem("sk_sort",v);localStorage.setItem("sk_dir",SKILL_DIR);render()}
+function toggleSkillDir(){SKILL_DIR=SKILL_DIR==="asc"?"desc":"asc";
+  localStorage.setItem("sk_dir",SKILL_DIR);render()}
 function skillCards(){
-  return S.skills.filter(skillMatch).map(k=>{
+  return sortSkills(S.skills.filter(skillMatch)).map(k=>{
     const projPills=Object.entries(k.places.projects).filter(([t,st])=>st!=="absent")
       .map(([t,st])=>pill(k.name,t,projLabel(t),st,t.replace("::","/.")+"/skills")).join("");
     const isRef=k.origin&&k.origin.type==="ref";
     return `<div class="skcard">
-      <div class="sk-head"><span class="sk-name" title="${k.name}">${k.name}</span>${originTag(k.origin)}
+      <div class="sk-head"><span class="sk-name" title="${k.name}">${k.name}</span>${originTag(k.origin)}${skillUsageBadge(k)}
         <span class="sk-acts">
           <button class="ghost" title="${isRef?t('t_view'):t('t_edit')}" onclick="editSkill('${k.name}')">✍</button>
           ${isRef?`<button class="ghost" title="${t('t_check_update')}" onclick="checkSource('${esc(k.origin.source)}')">↻</button>`:""}
@@ -1702,7 +1866,8 @@ function skillCards(){
         ${S.agents_root||k.places.agents!=="absent"?pill(k.name,"agents",t('pill_agents'),k.places.agents,"~/.agents/skills"):""}
         ${projPills}
         <span class="pill add" title="${t('t_add_proj_title')}" onclick="addProject('${k.name}')">${t('pill_add_proj')}</span>
-      </div></div>`}).join("")||`<div class="empty" style="grid-column:1/-1">${t('empty_skills')}</div>`;
+      </div>
+      ${skillMeta(k)}</div>`}).join("")||`<div class="empty" style="grid-column:1/-1">${t('empty_skills')}</div>`;
 }
 function pageSkills(){
   const chips=[["all",t('chip_all')],["own",t('chip_own')],["ext",t('chip_ext')]];
@@ -1733,6 +1898,16 @@ function pageSkills(){
       value="${esc(window._kw||"")}" oninput="window._kw=this.value;$('#sklist').innerHTML=skillCards()">
     <span class="chips" style="margin:0">${chips.map(([id,l])=>
       `<span class="chip ${FILTER===id?'active':''}" onclick="FILTER='${id}';render()">${l}</span>`).join("")}</span>
+    <label class="hint" style="margin-left:auto;display:flex;align-items:center;gap:6px">${t('sort_label')}
+      <select onchange="setSkillSort(this.value)">
+        <option value="name" ${SKILL_SORT==='name'?'selected':''}>${t('sort_name')}</option>
+        <option value="refs" ${SKILL_SORT==='refs'?'selected':''}>${t('sort_refs')}</option>
+        <option value="uses" ${SKILL_SORT==='uses'?'selected':''}>${t('sort_uses')}</option>
+        <option value="created" ${SKILL_SORT==='created'?'selected':''}>${t('sort_created')}</option>
+        <option value="updated" ${SKILL_SORT==='updated'?'selected':''}>${t('sort_updated')}</option>
+      </select>
+      <button class="ghost sortdir" title="${t('sort_dir_'+SKILL_DIR)}" onclick="toggleSkillDir()">${SKILL_DIR==='asc'?'↑':'↓'}</button>
+    </label>
   </div>
   <div id="sklist" class="skgrid">${skillCards()}</div>`;
 }
@@ -1804,6 +1979,131 @@ function pageUsage(){
   ${S.stale_targets.length?`<div class="warnbox">${t('stale_proj')}${S.stale_targets.map(esc).join("、")}</div>`:""}`;
 }
 
+/* ---------- 用量分析页 ---------- */
+const REF_ACTIVE=new Set(["hub-link","copy-synced","copy-diverged"]);
+let RANGE=localStorage.getItem("ins_range")||"total", SORT_REFS=false;
+function refCounts(k){
+  const g=["claude","codex","agents"].filter(kind=>REF_ACTIVE.has(k.places[kind])).length;
+  const p=Object.values(k.places.projects).filter(st=>REF_ACTIVE.has(st)).length;
+  return {g,p};
+}
+function usageRows(){
+  return S.skills.map(k=>{
+    const u=(USAGE&&USAGE[k.name])||{total:0,d7:0,d30:0,today:0,last_day:null,by_agent:{}};
+    const r=refCounts(k);
+    return {name:k.name,refG:r.g,refP:r.p,total:u.total||0,d7:u.d7||0,d30:u.d30||0,today:u.today||0,
+            last_day:u.last_day,by_agent:u.by_agent||{}};
+  });
+}
+function metricFor(row){return {today:row.today,d7:row.d7,d30:row.d30,total:row.total}[RANGE]}
+const AGENT_COLOR={claude:"var(--accent)",codex:"var(--warn)",opencode:"var(--info)"};
+const AGENT_ORDER=["claude","codex","opencode"];
+function usageHovercard(byAgent,metricKey,total){
+  if(!total)return "";
+  const rows=AGENT_ORDER.map(a=>({a,n:(byAgent&&byAgent[a]&&byAgent[a][metricKey])||0})).filter(r=>r.n>0);
+  if(!rows.length)return "";
+  return `<div class="usage-hovercard">
+    <div class="uhc-bar">${rows.map(r=>`<span style="width:${Math.round(r.n/total*100)}%;background:${AGENT_COLOR[r.a]}"></span>`).join("")}</div>
+    ${rows.map(r=>`<div class="uhc-row"><span class="uhc-dot" style="background:${AGENT_COLOR[r.a]}"></span>${t('agent_'+r.a)}<b>${r.n}</b><span class="uhc-pct">${Math.round(r.n/total*100)}%</span></div>`).join("")}
+  </div>`;
+}
+function skillUsageBadge(k){
+  if(!USAGE)return "";
+  const u=USAGE[k.name],total=(u&&u.total)||0;
+  if(!total)return "";
+  return `<span class="usage-badge hot">🔥 ${total}${usageHovercard(u.by_agent,"total",total)}</span>`;
+}
+function setRange(v){RANGE=v;localStorage.setItem("ins_range",v);render()}
+function toggleSortRefs(){SORT_REFS=!SORT_REFS;render()}
+function insightsKpis(rows){
+  let period=0,withData=0,top=null;
+  for(const r of rows){
+    const v=metricFor(r);
+    period+=v;
+    if(v>0){withData++;if(!top||v>metricFor(top))top=r}
+  }
+  const everTriggered=rows.filter(r=>r.total>0).length;
+  const totalSkills=rows.length;
+  const never=totalSkills-everTriggered;
+  const pct=totalSkills?Math.round(never/totalSkills*100):0;
+  return {period,withData,top,everTriggered,never,pct,totalSkills};
+}
+function animateKpis(){
+  document.querySelectorAll(".kpi-num[data-target]").forEach(el=>{
+    const to=parseInt(el.dataset.target,10)||0,dur=550,t0=performance.now();
+    (function step(now){
+      const p=Math.min(1,(now-t0)/dur),eased=1-Math.pow(1-p,3);
+      el.textContent=Math.round(eased*to).toLocaleString();
+      if(p<1)requestAnimationFrame(step);
+    })(t0);
+  });
+}
+function untrackedNote(){
+  if(!USAGE)return "";
+  const known=new Set(S.skills.map(k=>k.name));
+  let count=0,n=0;
+  for(const[name,u]of Object.entries(USAGE)){if(!known.has(name)){count++;n+=u.total||0}}
+  return count?`<div class="pendbox untracked-note">${tf('lb_untracked',{COUNT:count,N:n})}</div>`:"";
+}
+function leaderboardTable(rows){
+  const max=Math.max(1,...rows.map(metricFor));
+  return `<table class="lb-table"><thead><tr>
+    <th>${t('col_skill')}</th><th class="num">${t('col_ref_global')}</th><th class="num">${t('col_ref_proj')}</th>
+    <th class="bar-cell">${t('range_'+RANGE)}</th><th>${t('col_last')}</th>
+  </tr></thead><tbody>
+  ${rows.map((r,i)=>{
+    const v=metricFor(r),pct=Math.round(v/max*100);
+    const badge=(i<3&&v>0)?`<span class="rank-badge ${i===0?"r1":"r2"}">${i+1}</span>`:`<span class="rank-badge" style="visibility:hidden">·</span>`;
+    return `<tr class="${v===0?"muted-row":""}">
+      <td><div class="lb-name">${badge}<b title="${esc(r.name)}">${esc(r.name)}</b></div></td>
+      <td class="num">${r.refG}/3</td>
+      <td class="num">${r.refP}</td>
+      <td class="bar-cell"><div class="bar-row"><div class="bar-track"><div class="bar-fill" style="width:${v?pct:0}%"></div></div><span class="bar-num">${v}${usageHovercard(r.by_agent,RANGE,v)}</span></div></td>
+      <td class="hint">${r.last_day||t("lb_never")}</td>
+    </tr>`;
+  }).join("")}
+  </tbody></table>`;
+}
+function pageInsights(){
+  if(USAGE===null){
+    return `<div class="pagehead"><h1>${t('h_insights')}</h1><span class="sub">${t('sub_insights')}</span></div>
+    <div class="card" style="margin-top:18px;text-align:center;padding:34px 0"><div class="hint">${t('lb_scanning')}</div></div>`;
+  }
+  const rows=usageRows();
+  if(!rows.length){
+    return `<div class="pagehead"><h1>${t('h_insights')}</h1><span class="sub">${t('sub_insights')}</span></div>
+    <div class="empty">${t('lb_empty')}</div>`;
+  }
+  const kpi=insightsKpis(rows);
+  const sortKey=SORT_REFS?(r=>r.refG+r.refP):metricFor;
+  const sorted=[...rows].sort((a,b)=>sortKey(b)-sortKey(a)||a.name.localeCompare(b.name));
+  const ranges=["today","d7","d30","total"];
+  return `
+  <div class="pagehead"><h1>${t('h_insights')}</h1>
+    <span class="acts"><button class="ghost" onclick="loadUsage()">${t('btn_refresh_usage')}</button></span>
+    <span class="sub">${t('sub_insights')}</span></div>
+  <div class="row" style="margin:18px 0 0;align-items:center">
+    <div class="segmented">${ranges.map(r=>`<button class="${RANGE===r?"active":""}" onclick="setRange('${r}')">${t('range_'+r)}</button>`).join("")}</div>
+    <button class="ghost" style="margin-left:auto;font-size:12px" onclick="toggleSortRefs()">${SORT_REFS?t('sort_by_metric'):t('sort_by_refs')}</button>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card hero"><div class="kpi-label">${t('kpi_period')}</div>
+      <div class="kpi-num" data-target="${kpi.period}">0</div>
+      <div class="kpi-sub">${tf('kpi_period_sub',{COUNT:kpi.withData})}</div></div>
+    <div class="kpi-card"><div class="kpi-label">${t('kpi_top')}</div>
+      <div class="kpi-num"${kpi.top?` data-target="${metricFor(kpi.top)}"`:""}>${kpi.top?0:"–"}</div>
+      <div class="kpi-sub">${kpi.top?tf('kpi_top_sub',{COUNT:metricFor(kpi.top),NAME:esc(kpi.top.name)}):t('kpi_none')}</div></div>
+    <div class="kpi-card"><div class="kpi-label">${t('kpi_covered')}</div>
+      <div class="kpi-num" data-target="${kpi.everTriggered}">0</div>
+      <div class="kpi-sub">${tf('kpi_covered_sub',{HIT:kpi.everTriggered,TOTAL:kpi.totalSkills})}</div></div>
+    <div class="kpi-card"><div class="kpi-label">${t('kpi_never')}</div>
+      <div class="kpi-num" data-target="${kpi.never}">0</div>
+      <div class="kpi-sub">${tf('kpi_never_sub',{PCT:kpi.pct})}</div></div>
+  </div>
+  <div class="card">${leaderboardTable(sorted)}</div>
+  ${untrackedNote()}`;
+}
+
 /* ---------- 来源页 ---------- */
 let SRC_COLLAPSED={};   // 来源名 -> 是否收起技能列表
 function pageSources(){
@@ -1871,8 +2171,8 @@ function pageSettings(){
 function render(){
   if(!S)return;
   renderNav();
-  $("#page").innerHTML={skills:pageSkills,sets:pageSets,usage:pageUsage,sources:pageSources,
-                        settings:pageSettings}[TAB]();
+  $("#page").innerHTML={skills:pageSkills,sets:pageSets,usage:pageUsage,insights:pageInsights,
+                        sources:pageSources,settings:pageSettings}[TAB]();
   // 语言切换按钮:注入到每个页面顶部 pagehead 右侧
   let acts=document.querySelector(".pagehead .acts");
   if(!acts){const ph=document.querySelector(".pagehead");if(ph){acts=document.createElement("span");acts.className="acts";ph.appendChild(acts)}}
@@ -1883,6 +2183,7 @@ function render(){
     acts.appendChild(b);
   }
   applyI18n();
+  if(TAB==="insights")animateKpis();
 }
 
 /* ---------- 交互 ---------- */
@@ -2135,6 +2436,7 @@ document.addEventListener("click",e=>{
 });
 
 load();
+loadUsage();
 </script></body></html>
 """
 

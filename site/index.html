@@ -1,131 +1,1633 @@
 <!doctype html>
-<html lang="zh-CN">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Skills Hub · 技能库 — 一处管理所有 AI agent 技能</title>
-<meta name="description" content="开源、零依赖的本地技能管理器:把 Claude Code / Codex / 各项目的 skill 收进一个库,网页上统一开关、组合、更新。">
+<html lang="zh-CN"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Skills Hub — interactive demo · 技能库在线模拟</title>
+<meta name="description" content="Try Skills Hub in your browser: one local library for every AI agent skill (Claude Code / Codex / OpenCode), with real per-skill trigger counts. This is a simulation — nothing touches your machine.">
+<meta property="og:title" content="Skills Hub — interactive demo">
+<meta property="og:description" content="You've installed a pile of agent skills. Which ones actually fire? Click around a live simulation of Skills Hub.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://skills.liangai.org">
+<meta property="og:image" content="https://skills.liangai.org/screenshot.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://skills.liangai.org/screenshot.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%234655d4'/%3E%3Ctext x='50' y='72' font-size='60' text-anchor='middle' fill='%23fff'%3E✦%3C/text%3E%3C/svg%3E">
-<!-- Umami:在 analytics.liangai.org 建好站点后,把 data-website-id 换成真实 ID 并解除注释
-<script defer src="https://analytics.liangai.org/script.js" data-website-id="UMAMI_WEBSITE_ID"></script>
--->
 <style>
 :root{
-  --bg:#f4f5f7;--card:#fff;--ink:#181f2a;--muted:#68717f;--faint:#98a0ac;
+  --bg:#f4f5f7;--panel:#fbfbfc;--card:#fff;--ink:#181f2a;--muted:#68717f;--faint:#98a0ac;
   --line:#e4e7ec;--accent:#4655d4;--accent-soft:#eef0fd;--accent-ink:#3743ad;
-  --ok:#188945;--okbg:#e3f5ea;--r:16px;
+  --ok:#188945;--okbg:#e3f5ea;--warn:#96620b;--warnbg:#fdf2d7;--bad:#c22f2f;--badbg:#fde7e7;
+  --info:#215fb0;--infobg:#e6effc;--shadow:0 1px 2px rgba(16,24,40,.05);
+  --r:14px;--rs:9px;
 }
 @media(prefers-color-scheme:dark){:root{
-  --bg:#101318;--card:#1b202a;--ink:#e8ebf1;--muted:#9aa4b2;--faint:#6b7482;
+  --bg:#101318;--panel:#161a21;--card:#1b202a;--ink:#e8ebf1;--muted:#9aa4b2;--faint:#6b7482;
   --line:#2a303c;--accent:#7d8cf8;--accent-soft:#232a4d;--accent-ink:#aab4ff;
-  --ok:#5fd08c;--okbg:#15301f;
+  --ok:#5fd08c;--okbg:#15301f;--warn:#e8b34c;--warnbg:#38290e;--bad:#f27b7b;--badbg:#3d1a1a;
+  --info:#7fb0ee;--infobg:#16273f;--shadow:none;
 }}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);
-font:16px/1.75 -apple-system,"PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif}
-.wrap{max-width:880px;margin:0 auto;padding:0 24px}
-a{color:var(--accent-ink)}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);display:flex;
+font:14.5px/1.65 -apple-system,"PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif}
 
-header{padding:64px 0 24px;text-align:center}
-.logo{width:64px;height:64px;border-radius:18px;background:var(--accent);color:#fff;
-display:inline-flex;align-items:center;justify-content:center;font-size:34px}
-h1{font-size:34px;margin:18px 0 6px;letter-spacing:.3px}
-h1 .en{color:var(--faint);font-weight:500;font-size:20px}
-.tagline{font-size:18px;color:var(--muted);margin:0 auto;max-width:620px}
-.cta{display:flex;gap:12px;justify-content:center;margin:28px 0 8px;flex-wrap:wrap}
-.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border-radius:12px;
-font-size:15px;font-weight:600;text-decoration:none;border:1px solid var(--line);
-background:var(--card);color:var(--ink)}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
-.btn:hover{border-color:var(--accent)}
-.btn.primary:hover{opacity:.92}
-.meta{color:var(--faint);font-size:13px}
+/* ---- 侧边栏 ---- */
+.side{width:212px;flex:none;background:var(--panel);border-right:1px solid var(--line);
+display:flex;flex-direction:column;padding:18px 12px 14px;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:10px;padding:2px 10px 16px}
+.brand .logo{width:32px;height:32px;border-radius:9px;background:var(--accent);color:#fff;
+display:flex;align-items:center;justify-content:center;font-size:17px;flex:none}
+.brand b{font-size:15.5px;display:block;line-height:1.2}
+.brand .sub{font-size:11px;color:var(--faint)}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav button{display:flex;align-items:center;gap:10px;width:100%;padding:8px 11px;border:none;
+background:none;color:var(--muted);font:inherit;font-size:13.5px;border-radius:var(--rs);
+cursor:pointer;text-align:left}
+.nav button:hover{background:var(--accent-soft);color:var(--accent-ink)}
+.nav button.active{background:var(--accent-soft);color:var(--accent-ink);font-weight:600}
+.nav svg{width:17px;height:17px;flex:none}
+.nav .cnt{margin-left:auto;font-size:11px;color:var(--faint);font-weight:400}
+.sidefoot{margin-top:auto;padding:10px;font-size:11.5px;color:var(--faint);line-height:1.9}
+.sidefoot .st{display:flex;align-items:center;gap:6px}
+.sidefoot .st::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--faint)}
+.sidefoot .st.on::before{background:var(--ok)}
 
-.shot{margin:36px 0 8px}
-.shot img{width:100%;border-radius:var(--r);border:1px solid var(--line);
-box-shadow:0 18px 50px rgba(16,24,40,.12);display:block}
+/* ---- 主区 ---- */
+.main{flex:1;min-width:0;height:100vh;overflow-y:auto}
+.page{max-width:920px;margin:0 auto;padding:26px 30px 90px}
+.pagehead{display:flex;align-items:flex-start;gap:12px;margin-bottom:6px;flex-wrap:wrap}
+.pagehead h1{font-size:21px;margin:0;letter-spacing:.2px}
+.pagehead .sub{flex-basis:100%;color:var(--muted);font-size:13px;margin-top:2px}
+.pagehead .acts{margin-left:auto;display:flex;gap:8px;align-items:center}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+padding:16px 18px;margin-top:14px;box-shadow:var(--shadow)}
+.card h2{font-size:14.5px;margin:0 0 4px}
+.hint{font-size:12.5px;color:var(--muted)}
+.warnbox{background:var(--warnbg);color:var(--warn);border-radius:var(--rs);padding:8px 13px;
+font-size:13px;margin-top:10px}
+.banner{background:var(--infobg);color:var(--info);border-radius:var(--r);padding:13px 17px;
+margin-top:14px;font-size:13.5px}
+.banner b{display:block;margin-bottom:3px}
+.banner a{color:inherit}
 
-pre.install{background:var(--card);border:1px solid var(--line);border-radius:12px;
-padding:16px 20px;font:14px/1.9 ui-monospace,Menlo,Consolas,monospace;overflow-x:auto;
-margin:26px 0 0;color:var(--ink);text-align:left}
-pre.install .c{color:var(--faint)}
+/* ---- 控件 ---- */
+button{font:inherit;font-size:13px;padding:6px 13px;border-radius:var(--rs);
+border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;
+transition:border-color .12s,color .12s}
+button:hover{border-color:var(--accent);color:var(--accent-ink)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+button.primary:hover{opacity:.92;color:#fff}
+button.ghost{border-color:transparent;color:var(--muted)}
+button.ghost:hover{color:var(--accent-ink);border-color:transparent;background:var(--accent-soft)}
+button.danger:hover{border-color:var(--bad);color:var(--bad)}
+button:disabled{opacity:.45;cursor:default;pointer-events:none}
+.sortdir{min-width:34px;padding:7px 8px;font-size:15px;line-height:1;text-align:center;border-color:var(--line)}
+/* ---- 拆分按钮(主操作 + 下拉次选项) ---- */
+.splitbtn{display:inline-flex;position:relative}
+.splitbtn>button{border-radius:var(--rs) 0 0 var(--rs);border-right:none}
+.splitbtn>details.dropdown{position:relative}
+.splitbtn>details.dropdown>summary{list-style:none;display:flex;align-items:center;justify-content:center;
+  width:26px;height:100%;font-size:13px;padding:6px 6px;border-radius:0 var(--rs) var(--rs) 0;
+  border:1px solid var(--line);background:var(--card);color:var(--muted);cursor:pointer;
+  transition:border-color .12s,color .12s}
+.splitbtn>details.dropdown>summary::-webkit-details-marker{display:none}
+.splitbtn>details.dropdown>summary:hover{border-color:var(--accent);color:var(--accent-ink)}
+.splitbtn>details.dropdown[open]>summary{border-color:var(--accent);color:var(--accent-ink)}
+.dropdown-menu{position:absolute;top:calc(100% + 6px);right:0;min-width:220px;z-index:20;
+  background:var(--card);border:1px solid var(--line);border-radius:var(--rs);box-shadow:0 6px 20px rgba(16,24,40,.12);
+  padding:5px;display:flex;flex-direction:column;gap:2px}
+.dropdown-menu button{width:100%;text-align:left;border:none;background:none;padding:7px 9px;
+  border-radius:6px;display:flex;flex-direction:column;gap:1px;align-items:flex-start}
+.dropdown-menu button:hover{background:var(--accent-soft);border-color:transparent;color:var(--ink)}
+.dropdown-menu button .dd-sub{font-size:11px;color:var(--faint);font-weight:400}
+input[type=text],select{font:inherit;font-size:13.5px;padding:7px 11px;
+border:1px solid var(--line);border-radius:var(--rs);background:var(--card);color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.field{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--muted)}
+textarea{width:100%;font:13px/1.55 ui-monospace,Menlo,Consolas,monospace;border:1px solid var(--line);
+border-radius:var(--rs);padding:10px;background:var(--bg);color:var(--ink);resize:vertical}
+pre{font-size:12px;color:var(--muted);overflow-x:auto;margin:6px 0 0;white-space:pre-wrap}
+.mono{font:12px ui-monospace,Menlo,Consolas,monospace}
 
-section{margin:56px 0}
-h2{font-size:22px;margin:0 0 18px;text-align:center}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-@media(max-width:720px){.grid{grid-template-columns:1fr}}
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px 22px}
-.card h3{font-size:16px;margin:0 0 6px}
-.card p{margin:0;font-size:14px;color:var(--muted)}
-.card .ico{font-size:22px;display:block;margin-bottom:10px}
+/* ---- 徽章 ---- */
+.tag{display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:1px 7px;flex:none;
+border-radius:99px;border:1px solid var(--line);color:var(--muted);white-space:nowrap;font-weight:500}
+.tag.src-own{background:transparent}
+.tag.src-ref{background:var(--infobg);color:var(--info);border-color:transparent}
+.tag.src-copy{background:var(--accent-soft);color:var(--accent-ink);border-color:transparent}
+.tag.done{background:var(--okbg);color:var(--ok);border-color:transparent}
+.tag.miss{color:var(--bad);border-color:var(--bad)}
+.usage-badge{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;padding:1px 8px;flex:none;
+border-radius:99px;font-weight:700;font-variant-numeric:tabular-nums;cursor:default;position:relative}
+.usage-badge.hot{background:var(--accent-soft);color:var(--accent-ink);cursor:help}
+.usage-badge.cold{background:transparent;color:var(--faint);font-weight:500;border:1px solid var(--line)}
+.bar-num:has(.usage-hovercard){cursor:help}
+/* 纯 CSS 悬浮卡:锚在触发元素上、绝对定位,不用 JS 摆位,所以绝不会跳/漂移 */
+.usage-hovercard{position:absolute;z-index:60;top:calc(100% + 8px);left:50%;
+opacity:0;visibility:hidden;transform:translateX(-50%) translateY(-4px);
+transition:opacity .13s ease,transform .13s ease;pointer-events:none;
+background:var(--card);border:1px solid var(--line);border-radius:10px;
+box-shadow:0 8px 24px rgba(0,0,0,.16);padding:10px 12px;min-width:158px;text-align:left;
+white-space:nowrap;font-weight:400;font-size:12px}
+.usage-badge:hover .usage-hovercard,.bar-num:hover .usage-hovercard{
+opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+.uhc-bar{display:flex;height:6px;border-radius:3px;overflow:hidden;background:var(--panel);margin-bottom:8px}
+.uhc-bar span{height:100%}
+.uhc-row{display:flex;align-items:center;gap:6px;color:var(--muted);padding:2px 0}
+.uhc-dot{width:7px;height:7px;border-radius:50%;flex:none}
+.uhc-row b{margin-left:auto;color:var(--ink);font-variant-numeric:tabular-nums;font-weight:700}
+.uhc-pct{color:var(--faint);font-size:11px;min-width:32px;text-align:right}
 
-.boundary{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
-padding:26px 30px}
-.boundary h2{text-align:left;font-size:18px;margin-bottom:10px}
-.boundary ul{margin:0;padding-left:20px;color:var(--muted);font-size:14.5px}
-.boundary li{margin:6px 0}
-.boundary b{color:var(--ink)}
+/* ---- 技能卡(紧凑两列,同「使用情况」) ---- */
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 2px}
+.chip{font-size:12.5px;padding:4px 13px;border-radius:99px;border:1px solid var(--line);
+background:var(--card);color:var(--muted);cursor:pointer;user-select:none}
+.chip.active{background:var(--ink);color:var(--card);border-color:var(--ink);font-weight:600}
+.skgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+@media(max-width:820px){.skgrid{grid-template-columns:1fr}}
+.skcard{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+padding:11px 14px 10px;box-shadow:var(--shadow);display:flex;flex-direction:column;min-width:0}
+.sk-head{display:flex;gap:6px;align-items:center;min-width:0}
+.sk-name{font-weight:650;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+flex:1 1 auto;min-width:0}
+.sk-desc{color:var(--muted);font-size:12px;line-height:1.55;margin:3px 0 8px;
+display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.sk-acts{margin-left:auto;display:flex;flex:none;gap:2px}
+.sk-acts button{padding:2px 7px;font-size:12px;line-height:1.4}
+.src-link{color:inherit;text-decoration:none;cursor:pointer;max-width:110px;overflow:hidden;
+text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:bottom}
+.src-link:hover{text-decoration:underline}
+/* 勾选式技能卡(组合编辑器用):整卡可点,勾上高亮 */
+.skcard.sel{cursor:pointer}
+.skcard.sel:hover{border-color:var(--accent)}
+.skcard.sel.on{background:var(--accent-soft);border-color:var(--accent)}
+.skcard.sel .se-head{display:flex;align-items:center;gap:7px;min-width:0}
+.skcard.sel input[type=checkbox]{flex:none;width:15px;height:15px;cursor:pointer}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:3px 10px;
+border-radius:99px;border:1.5px solid var(--line);cursor:pointer;color:var(--muted);
+user-select:none;background:var(--card);transition:border-color .12s}
+.pill:hover{border-color:var(--accent)}
+.pill.on{background:var(--okbg);border-color:var(--ok);color:var(--ok);font-weight:600}
+.pill.on::before{content:"✓"}
+.pill.warn{border-color:var(--warn);color:var(--warn)}
+.pill.add{border-style:dashed;color:var(--faint)}
+.pills{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-top:auto}
+.sk-meta{margin-top:9px;font-size:10.5px;color:var(--faint);display:flex;flex-wrap:wrap;gap:3px 14px;cursor:default}
+.sk-meta b{font-weight:500;color:var(--muted);margin-right:4px}
 
-.pill-demo{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:3px 12px;
-border-radius:99px;border:1.5px solid var(--ok);background:var(--okbg);color:var(--ok);font-weight:600}
+/* ---- 使用情况 ---- */
+.usegrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+@media(max-width:760px){.usegrid{grid-template-columns:1fr}}
+.usecard{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+padding:15px 17px;box-shadow:var(--shadow)}
+.usecard h3{font-size:14px;margin:0;display:flex;align-items:center;gap:8px}
+.usecard h3 .n{margin-left:auto;font-size:12px;color:var(--faint);font-weight:400}
+.usecard .path{font-size:11.5px;color:var(--faint);margin:1px 0 10px;word-break:break-all}
+.loc-ico{width:26px;height:26px;border-radius:7px;background:var(--accent-soft);color:var(--accent-ink);
+display:flex;align-items:center;justify-content:center;font-size:13px;flex:none}
+/* ---- 用量分析 ---- */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0 22px}
+@media(max-width:820px){.kpi-grid{grid-template-columns:1fr 1fr}}
+.kpi-card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+padding:16px 17px;box-shadow:var(--shadow);overflow:hidden}
+.kpi-card.hero::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;
+background:linear-gradient(90deg,var(--accent),#8b6ff0)}
+.kpi-label{font-size:11.5px;color:var(--muted);font-weight:600;letter-spacing:.3px;text-transform:uppercase}
+.kpi-num{font-size:26px;font-weight:700;margin-top:6px;font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+.kpi-sub{font-size:12px;color:var(--faint);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.segmented{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px}
+.segmented button{border:none;background:none;color:var(--muted);font:inherit;font-size:12.5px;font-weight:600;
+padding:5px 13px;border-radius:999px;cursor:pointer;transition:background .15s,color .15s}
+.segmented button:hover{color:var(--ink)}
+.segmented button.active{background:var(--accent);color:#fff}
+.lb-table{width:100%;border-collapse:collapse;font-size:13px}
+.lb-table th{text-align:left;color:var(--muted);font-weight:600;font-size:11px;letter-spacing:.2px;
+text-transform:uppercase;padding:0 10px 9px;border-bottom:1px solid var(--line)}
+.lb-table td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+.lb-table tr:last-child td{border-bottom:none}
+.lb-table tbody tr{transition:background .12s}
+.lb-table tbody tr:hover{background:var(--accent-soft)}
+.lb-table td.num,.lb-table th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.lb-table td.strong{font-weight:700;color:var(--accent-ink)}
+.lb-table tr.muted-row td{color:var(--faint)}
+.lb-name{display:flex;align-items:center;gap:8px;min-width:0}
+.lb-name b{font:12.5px ui-monospace,Menlo,Consolas,monospace;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rank-badge{flex:none;width:20px;height:20px;border-radius:6px;font-size:10.5px;font-weight:700;
+display:flex;align-items:center;justify-content:center;background:var(--panel);color:var(--faint)}
+.rank-badge.r1{background:var(--accent);color:#fff}
+.rank-badge.r2,.rank-badge.r3{background:var(--accent-soft);color:var(--accent-ink)}
+.bar-cell{min-width:140px}
+.bar-row{display:flex;align-items:center;gap:9px}
+.bar-track{flex:1;height:7px;border-radius:4px;background:var(--panel);overflow:hidden}
+.bar-fill{height:100%;background:linear-gradient(90deg,var(--accent-soft),var(--accent));border-radius:4px;
+transition:width .5s cubic-bezier(.16,1,.3,1)}
+.bar-num{position:relative;flex:none;min-width:24px;text-align:right;font-weight:700;color:var(--accent-ink);font-variant-numeric:tabular-nums}
+.untracked-note{margin-top:12px}
 
-footer{border-top:1px solid var(--line);margin-top:70px;padding:28px 0 44px;
-text-align:center;color:var(--faint);font-size:13.5px}
-footer a{color:var(--muted);text-decoration:none;margin:0 10px}
-footer a:hover{color:var(--accent-ink)}
+/* ---- 来源 ---- */
+.srcskill{display:flex;gap:8px;align-items:baseline;padding:7px 0;border-bottom:1px dashed var(--line);flex-wrap:wrap}
+.srcskill:last-child{border-bottom:none}
+.pendbox{background:var(--infobg);border-radius:var(--rs);padding:11px 14px;margin-top:10px;font-size:13px;color:var(--info)}
+.pendbox b{display:block;margin-bottom:2px}
+
+/* ---- 弹层 ---- */
+dialog{border:1px solid var(--line);border-radius:var(--r);background:var(--card);color:var(--ink);
+width:min(860px,94vw);padding:20px 22px}
+dialog::backdrop{background:rgba(10,14,20,.45)}
+dialog h2{margin:0 0 10px;font-size:16px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);
+color:var(--bg);padding:10px 20px;border-radius:12px;font-size:13px;opacity:0;transition:.25s;
+pointer-events:none;max-width:82vw;z-index:99}
+.toast.show{opacity:.96}
+.empty{color:var(--faint);font-size:13px;padding:22px 0;text-align:center}
+.diff-pre{background:var(--panel);border:1px solid var(--line);border-radius:var(--rs);
+padding:12px 14px;max-height:58vh;overflow:auto;font:12.5px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+white-space:pre-wrap;word-break:break-word;margin:0}
+.df-h{color:var(--muted)}
+.df-add{color:var(--ok)}
+.df-del{color:var(--bad)}
+.warnbox .dv-item{display:inline-block;background:rgba(0,0,0,.05);border-radius:6px;padding:1px 7px;margin:2px 4px 2px 0}
+.warnbox .dv-link{color:inherit;text-decoration:underline;cursor:pointer;font-size:12px;margin-left:4px;opacity:.85}
+.warnbox .dv-link:hover{opacity:1}
+code{background:rgba(0,0,0,.07);border-radius:4px;padding:0 4px;font:inherit;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid var(--info);
+border-top-color:transparent;border-radius:50%;animation:sp 1s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+@media(max-width:860px){
+  body{flex-direction:column}
+  .side{width:100%;height:auto;position:static;flex-direction:row;align-items:center;
+  padding:10px 12px;gap:6px;overflow-x:auto}
+  .brand{padding:0 6px 0 0}.brand .sub{display:none}
+  .nav{flex-direction:row}.nav button{padding:7px 10px;white-space:nowrap}
+  .nav .cnt{display:none}.sidefoot{display:none}
+  .main{height:auto}.page{padding:16px 14px 70px}
+}
+</style></head><body>
+
+<aside class="side">
+  <div class="brand"><div class="logo">✦</div><div><b data-i18n="app_name">技能库</b><span class="sub" data-i18n="app_sub">一处管理 · 处处可用</span></div></div>
+  <nav class="nav" id="nav"></nav>
+  <div class="sidefoot" id="sidefoot"></div>
+</aside>
+
+<div class="main"><div class="page" id="page"></div></div>
+
+<dialog id="editor">
+  <h2 id="edTitle"></h2>
+  <textarea id="edBody" style="height:56vh" spellcheck="false"></textarea>
+  <div class="row" style="justify-content:flex-end;margin-top:12px">
+    <span class="hint" id="edHint" style="margin-right:auto"></span>
+    <button class="ghost" id="edOpen" data-i18n-title="t_open_dir" data-i18n="ed_open_skill" onclick="post('/api/open',{name:ED.name})">打开目录</button>
+    <button data-i18n="ed_cancel" onclick="editor.close()">取消</button>
+    <button class="primary" id="edSave" data-i18n="ed_save" onclick="saveEditor()">保存</button>
+  </div>
+</dialog>
+
+<dialog id="ask">
+  <h2 id="askTitle"></h2>
+  <div class="hint" id="askHint" style="margin-bottom:10px"></div>
+  <div id="askBody"></div>
+  <div class="row" style="justify-content:flex-end;margin-top:14px">
+    <button data-i18n="ask_cancel" onclick="ask.close()">取消</button>
+    <button class="primary" id="askOk" data-i18n="ask_ok">确定</button>
+  </div>
+</dialog>
+
+<dialog id="diff">
+  <h2 id="diffTitle" data-i18n="diff_title">差异</h2>
+  <div class="hint" id="diffHint" style="margin-bottom:8px" data-i18n="diff_hint">左 library/=库(真源),右=该放置点副本。绿行=库里有的, 红行=副本独有的改动。</div>
+  <pre id="diffBody" class="diff-pre"></pre>
+  <div class="row" style="justify-content:flex-end;margin-top:12px">
+    <button data-i18n="diff_close" onclick="diff.close()">关闭</button>
+    <button class="primary" id="diffRelink" data-i18n="diff_relink">收回为软链接</button>
+  </div>
+</dialog>
+
+<dialog id="setEditor">
+  <h2 id="seTitle" data-i18n="nav_sets">组合</h2>
+  <div class="row" style="gap:8px;margin-bottom:4px">
+    <label class="hint" style="white-space:nowrap" data-i18n="se_name_label">组合名</label>
+    <input type="text" id="setName" style="flex:1" data-i18n-ph="se_ph" placeholder="my-set(小写字母、数字、连字符)">
+  </div>
+  <div class="hint" style="margin-bottom:8px" data-i18n="se_hint">勾选要放进这组的技能;悬浮卡片可看完整说明。</div>
+  <div class="skgrid" id="seCards" style="max-height:52vh;overflow-y:auto;align-content:start"></div>
+  <div class="row" style="justify-content:flex-end;margin-top:12px">
+    <button data-i18n="se_cancel" onclick="setEditor.close()">取消</button>
+    <button class="primary" data-i18n="se_save" onclick="saveSetEditor()">保存</button>
+  </div>
+</dialog>
+
+<dialog id="srcCheck">
+  <h2 id="srcChkTitle" data-i18n="t_check_update">检查更新</h2>
+  <div id="srcChkBody" style="min-height:60px"></div>
+  <div class="row" style="justify-content:flex-end;margin-top:12px">
+    <button data-i18n="sc_close" onclick="srcCheck.close()">关闭</button>
+  </div>
+</dialog>
+
+<div class="toast" id="toast"></div>
+
+<style id="demo-style">
+:root{--dbh:50px}
+body{padding-top:var(--dbh)}
+/* 侧栏只在宽屏是 sticky 满高的一列;窄屏下它变成横向导航条(webui.py 的 860px 断点),
+   那时不能再压 height,否则会把导航撑成整屏高、把内容挤出视口 */
+@media(min-width:861px){
+  .side{top:var(--dbh) !important;height:calc(100vh - var(--dbh)) !important}
+}
+.demobar{position:fixed;top:0;left:0;right:0;height:var(--dbh);z-index:300;
+  display:flex;align-items:center;gap:14px;padding:0 16px;
+  background:var(--card);border-bottom:1px solid var(--line);
+  box-shadow:0 1px 3px rgba(16,24,40,.06)}
+.demobar .db-brand{display:flex;align-items:center;gap:8px;flex:none}
+.demobar .db-logo{width:24px;height:24px;border-radius:7px;background:var(--accent);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:13px}
+.demobar .db-brand b{font-size:14px}
+.demobar .db-tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;
+  background:var(--accent-soft);color:var(--accent-ink);white-space:nowrap}
+.demobar .db-note{font-size:12.5px;color:var(--muted);flex:1;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.demobar .db-act{display:flex;align-items:center;gap:8px;flex:none}
+.demobar .db-act button,.demobar .db-act a{font:inherit;font-size:12.5px;font-weight:600;
+  padding:6px 13px;border-radius:9px;border:1px solid var(--line);background:var(--card);
+  color:var(--ink);cursor:pointer;text-decoration:none;white-space:nowrap}
+.demobar .db-act button:hover,.demobar .db-act a:hover{border-color:var(--accent)}
+.demobar .db-act .primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.demobar .db-act .primary:hover{opacity:.92}
+@media(max-width:900px){.demobar .db-note{display:none}}
+@media(max-width:620px){   /* 窄屏放不下全部,留住最关键的两个入口:说明 + 安装 */
+  .demobar{gap:8px;padding:0 10px}
+  .demobar .db-tag,.demobar .db-brand b,.demobar .db-act a{display:none}
+  .demobar .db-act button{padding:6px 10px}
+}
+#demoIntro,#demoInstall{max-width:min(560px, calc(100vw - 28px))}
+
+#demoIntro::backdrop,#demoInstall::backdrop{background:rgba(16,20,32,.45)}
+#demoIntro,#demoInstall{max-width:560px}
+#demoIntro h2,#demoInstall h2{margin:0 0 4px}
+.demo-lede{color:var(--muted);font-size:13.5px;margin:0 0 16px}
+.demo-try{list-style:none;padding:0;margin:0 0 18px}
+.demo-try li{display:flex;gap:11px;align-items:flex-start;padding:9px 0;
+  border-top:1px solid var(--line);font-size:13.5px}
+.demo-try li:first-child{border-top:none}
+.demo-try .n{width:20px;height:20px;border-radius:50%;background:var(--accent-soft);
+  color:var(--accent-ink);font-size:11px;font-weight:700;flex:none;
+  display:flex;align-items:center;justify-content:center;margin-top:2px}
+.demo-try b{display:block}
+.demo-try span.d{color:var(--muted);font-size:12.5px}
+.demo-note{background:var(--infobg);color:var(--info);border-radius:var(--rs);
+  padding:10px 13px;font-size:12.5px;margin:0 0 16px}
+pre.demo-cmd{background:var(--panel);border:1px solid var(--line);border-radius:var(--rs);
+  padding:13px 15px;font:12.5px/1.85 ui-monospace,Menlo,Consolas,monospace;
+  overflow-x:auto;margin:0 0 14px;color:var(--ink)}
+pre.demo-cmd .c{color:var(--faint)}
 </style>
-</head>
-<body>
 
-<div class="wrap">
-  <header>
-    <div class="logo">✦</div>
-    <h1>技能库 <span class="en">Skills Hub</span></h1>
-    <p class="tagline">一处管理所有 AI agent 技能。把 Claude Code、Codex、各项目的 skill 收进一个本地库,网页上统一开关 <span class="pill-demo">✓ Claude 全局</span>、组合、更新。</p>
-    <div class="cta">
-      <a class="btn primary" href="https://github.com/Liang-HZ/skills-hub" data-umami-event="github-click">GitHub 仓库 →</a>
-      <a class="btn" href="https://github.com/Liang-HZ/skills-hub#quick-start" data-umami-event="quickstart-click">快速开始</a>
-    </div>
-    <p class="meta">开源 · MIT · 零依赖(Python 标准库) · 纯本地,数据不出机器</p>
-    <pre class="install"><span class="c"># 三行跑起来(macOS / Linux / Windows)</span>
+<div class="demobar">
+  <div class="db-brand"><span class="db-logo">✦</span><b>Skills Hub</b>
+    <span class="db-tag" data-i18n="demo_tag">在线模拟</span></div>
+  <div class="db-note" data-i18n="demo_note">这是模拟板:数据是编的,一切都跑在你的浏览器里,碰不到你的电脑。</div>
+  <div class="db-act">
+    <button data-i18n="demo_what" onclick="demoIntro.showModal()">这是什么?</button>
+    <button class="primary" data-i18n="demo_install" onclick="demoInstall.showModal()">装到本地</button>
+    <a href="https://github.com/Liang-HZ/skills-hub" target="_blank" rel="noopener">GitHub</a>
+  </div>
+</div>
+
+<dialog id="demoIntro">
+  <h2 data-i18n="demo_i_title">你在看一个模拟板</h2>
+  <p class="demo-lede" data-i18n="demo_i_lede">这是 Skills Hub 管理台的真实界面,只不过后端换成了浏览器内存里的假数据。随便点,坏不了。</p>
+  <ul class="demo-try">
+    <li><span class="n">1</span><div><b data-i18n="demo_i_1h">拨一个开关</b>
+      <span class="d" data-i18n="demo_i_1d">技能卡片上那排按钮。绿的 = 那个位置能用这个技能。真实版里,这一下就是建/删一条软链接。</span></div></li>
+    <li><span class="n">2</span><div><b data-i18n="demo_i_2h">打开「用量分析」</b>
+      <span class="d" data-i18n="demo_i_2d">这是本工具真正独有的地方:每个技能被实际触发了多少次。注意「从未触发」那一格——装了但从没用过的技能。</span></div></li>
+    <li><span class="n">3</span><div><b data-i18n="demo_i_3h">试试「组合」</b>
+      <span class="d" data-i18n="demo_i_3d">把常一起用的技能存成一组,一键开关整组。</span></div></li>
+  </ul>
+  <p class="demo-note" data-i18n="demo_i_note">数字是编出来的样例数据。真实版里,这些触发次数是从 Claude Code / Codex / OpenCode 各自的本地会话记录里数出来的——只读、不上传、不出你的机器。</p>
+  <div class="row" style="justify-content:flex-end;gap:8px">
+    <button data-i18n="demo_i_close" onclick="demoIntro.close()">开始点</button>
+    <button class="primary" data-i18n="demo_install" onclick="demoIntro.close();demoInstall.showModal()">装到本地</button>
+  </div>
+</dialog>
+
+<dialog id="demoInstall">
+  <h2 data-i18n="demo_n_title">装到本地(真正能用的版本)</h2>
+  <p class="demo-lede" data-i18n="demo_n_lede">模拟板只能看。要真的管理你机器上的技能,把它跑起来——只要 Python 3.9+ 和 Git,不装任何依赖。</p>
+  <pre class="demo-cmd"><span class="c"># macOS / Linux / Windows 都一样</span>
 git clone https://github.com/Liang-HZ/skills-hub.git
 cd skills-hub
 python3 webui.py   <span class="c"># 打开 http://127.0.0.1:7799</span></pre>
-  </header>
+  <p class="demo-lede" data-i18n="demo_n_win">Windows 双击 start-windows.bat 也行。想要个原生窗口:pip install pywebview && python3 desktop.py。</p>
+  <div class="row" style="justify-content:flex-end;gap:8px">
+    <button data-i18n="demo_n_close" onclick="demoInstall.close()">关闭</button>
+    <a class="primary" href="https://github.com/Liang-HZ/skills-hub" target="_blank" rel="noopener"
+       style="font:inherit;font-size:13px;font-weight:600;padding:8px 15px;border-radius:9px;
+              background:var(--accent);color:#fff;text-decoration:none">GitHub →</a>
+  </div>
+</dialog>
 
-  <div class="shot"><img src="screenshot.png" alt="Skills Hub 管理界面:技能卡片与各处启用开关"></div>
 
-  <section>
-    <h2>它解决什么问题</h2>
-    <div class="grid">
-      <div class="card"><span class="ico">🗂️</span><h3>一处管理,处处可用</h3>
-        <p>技能的唯一真源在本地库里,链接到 ~/.claude、~/.codex、~/.agents 或任意项目目录。改一处、处处生效;关掉开关只是摘链接,技能删不丢。</p></div>
-      <div class="card"><span class="ico">🧩</span><h3>组合一键开关</h3>
-        <p>把常一起用的技能存成一组,新项目一键开整组,收尾一键关掉。每次变更自动进本地 git 历史,步步可回退。</p></div>
-      <div class="card"><span class="ico">🔍</span><h3>第三方来源,主权在你</h3>
-        <p>别人的技能仓库先克隆进隔离区,挑着引入"当时内容的快照"。更新要两次明确授权:先检查看差异,拿到一次性令牌,再更新到你看过的那个版本。</p></div>
+
+<script id="demo-backend">
+/* 模拟板的后端。真实管理台里这些请求打到本机 127.0.0.1:7799 的 Python 服务;
+   这里全部在浏览器内存里应答,页面一刷新就复原。 */
+(function(){
+  const DATA = {"state": {"skills": [{"name": "api-docs", "desc": "Generate OpenAPI docs from route definitions and keep them in sync with code. Use after changing endpoints.", "origin": null, "places": {"claude": "hub-link", "codex": "absent", "agents": "absent", "projects": {"/Users/you/work/payments-api::claude": "absent", "/Users/you/work/web-app::claude": "absent", "/Users/you/work/data-pipeline::claude": "absent", "/Users/you/work/mobile-client::claude": "absent"}}, "created": 1784035986.7205198, "updated": 1784035986.720586}, {"name": "changelog", "desc": "Generate a user-facing changelog from commits between two tags. Use before cutting a release.", "origin": null, "places": {"claude": "absent", "codex": "hub-link", "agents": "absent", "projects": {"/Users/you/work/payments-api::claude": "absent", "/Users/you/work/web-app::claude": "absent", "/Users/you/work/data-pipeline::claude": "absent", "/Users/you/work/mobile-client::claude": "absent"}}, "created": 1784035986.7204006, "updated": 1784035986.7204804}, {"name": "code-review", "desc": "Review the working diff for correctness bugs and simplification wins, ranked by severity. Use before committing or opening a PR.", "origin": null, "places": {"claude": "hub-link", "codex": "hub-link", "agents": "absent", "projects": {"/Users/you/work/payments-api::claude": "hub-link", "/Users/you/work/web-app::claude": "hub-link", "/Users/you/work/data-pipeline::claude": "hub-link", "/Users/you/work/mobile-client::claude": "hub-link"}}, "created": 1784035986.7196653, "updated": 1784035986.719812}, {"name": "commit-helper", "desc": "Read staged changes and draft a commit message matching the repo's history style. Use before git commit.", "origin": null, "places": {"claude": "hub-link", "codex": "hub-link", "agents": "hub-link", "projects": {"/Users/you/work/payments-api::claude": "hub-link", "/Users/you/work/web-app::claude": "hub-link", "/Users/you/work/data-pipeline::claude": "hub-link", "/Users/you/work/mobile-client::claude": "hub-link"}}, "created": 1784035986.7199838, "updated": 1784035986.7200544}, {"name": "dataviz", "desc": "Read before charting: color formula, form heuristics, light/dark validator. Use for any chart or dashboard task.", "origin": {"kind": "snapshot", "source": "anthropics/skills", "ref": "main", "commit": "a3f19c2", "path": "dataviz", "at": "2026-07-02T09:14:00"}, "places": {"claude": "hub-link", "codex": "absent", "agents": "hub-link", "projects": {"/Users/you/work/payments-api::claude": "absent", "/Users/you/work/web-app::claude": "absent", "/Users/you/work/data-pipeline::claude": "hub-link", "/Users/you/work/mobile-client::claude": "hub-link"}}, "created": 1784035986.7201912, "updated": 1784035986.7202659}, {"name": "meeting-notes", "desc": "Turn meeting transcripts into decisions plus an action list. Use when a transcript is pasted.", "origin": null, "places": {"claude": "hub-link", "codex": "absent", "agents": "hub-link", "projects": {"/Users/you/work/payments-api::claude": "absent", "/Users/you/work/web-app::claude": "absent", "/Users/you/work/data-pipeline::claude": "absent", "/Users/you/work/mobile-client::claude": "absent"}}, "created": 1784035986.7208216, "updated": 1784035986.720885}, {"name": "pdf-extract", "desc": "Extract text and tables from PDFs, with OCR for scanned files. Use when a .pdf file is mentioned.", "origin": {"kind": "snapshot", "source": "anthropics/skills", "ref": "main", "commit": "a3f19c2", "path": "pdf", "at": "2026-07-02T09:14:00"}, "places": {"claude": "hub-link", "codex": "absent", "agents": "absent", "projects": {"/Users/you/work/payments-api::claude": "absent", "/Users/you/work/web-app::claude": "hub-link", "/Users/you/work/data-pipeline::claude": "hub-link", "/Users/you/work/mobile-client::claude": "hub-link"}}, "created": 1784035986.7200847, "updated": 1784035986.7201517}, {"name": "regex-helper", "desc": "Explain gnarly regexes and offer tested alternatives. Use when a regex is hard to read.", "origin": null, "places": {"claude": "absent", "codex": "hub-link", "agents": "absent", "projects": {"/Users/you/work/payments-api::claude": "absent", "/Users/you/work/web-app::claude": "absent", "/Users/you/work/data-pipeline::claude": "absent", "/Users/you/work/mobile-client::claude": "absent"}}, "created": 1784035986.7209156, "updated": 1784035986.7209907}, {"name": "security-audit", "desc": "Review changes for injection, authz gaps, and leaked secrets. Use for auth or untrusted-input changes.", "origin": null, "places": {"claude": "hub-link", "codex": "absent", "agents": "absent", "projects": {"/Users/you/work/payments-api::claude": "absent", "/Users/you/work/web-app::claude": "absent", "/Users/you/work/data-pipeline::claude": "absent", "/Users/you/work/mobile-client::claude": "absent"}}, "created": 1784035986.7206206, "updated": 1784035986.7206876}, {"name": "slide-deck", "desc": "Turn an outline into a .pptx deck using templates and layouts. Use when a deck or slides are requested.", "origin": {"kind": "copy", "source": "anthropics/skills", "ref": "main", "commit": "7c02b81", "path": "pptx", "at": "2026-06-28T15:40:00"}, "places": {"claude": "hub-link", "codex": "absent", "agents": "absent", "projects": {"/Users/you/work/payments-api::claude": "absent", "/Users/you/work/web-app::claude": "absent", "/Users/you/work/data-pipeline::claude": "absent", "/Users/you/work/mobile-client::claude": "absent"}}, "created": 1784035986.7207203, "updated": 1784035986.720792}, {"name": "sql-optimizer", "desc": "Analyze slow-query plans and suggest indexes or rewrites. Use when a query is reported slow.", "origin": null, "places": {"claude": "hub-link", "codex": "absent", "agents": "absent", "projects": {"/Users/you/work/payments-api::claude": "absent", "/Users/you/work/web-app::claude": "absent", "/Users/you/work/data-pipeline::claude": "absent", "/Users/you/work/mobile-client::claude": "hub-link"}}, "created": 1784035986.720298, "updated": 1784035986.7203665}, {"name": "test-writer", "desc": "Write unit tests for changed functions, auto-detecting the framework and existing style. Use after writing new logic.", "origin": null, "places": {"claude": "hub-link", "codex": "absent", "agents": "absent", "projects": {"/Users/you/work/payments-api::claude": "hub-link", "/Users/you/work/web-app::claude": "hub-link", "/Users/you/work/data-pipeline::claude": "hub-link", "/Users/you/work/mobile-client::claude": "hub-link"}}, "created": 1784035986.7198691, "updated": 1784035986.7199523}], "projects": ["/Users/you/work/payments-api", "/Users/you/work/web-app", "/Users/you/work/data-pipeline", "/Users/you/work/mobile-client"], "proj_targets": [{"path": "/Users/you/work/payments-api", "kind": "claude", "target": "/Users/you/work/payments-api::claude"}, {"path": "/Users/you/work/web-app", "kind": "claude", "target": "/Users/you/work/web-app::claude"}, {"path": "/Users/you/work/data-pipeline", "kind": "claude", "target": "/Users/you/work/data-pipeline::claude"}, {"path": "/Users/you/work/mobile-client", "kind": "claude", "target": "/Users/you/work/mobile-client::claude"}], "agents_root": true, "stale_targets": [], "warnings": [], "divergences": [], "sets": {"daily-dev": ["code-review", "test-writer", "commit-helper"], "docs-and-reporting": ["pdf-extract", "slide-deck", "meeting-notes"], "release": ["changelog", "security-audit", "api-docs"]}, "sets_raw": {"daily-dev": "code-review\ntest-writer\ncommit-helper\n", "docs-and-reporting": "pdf-extract\nslide-deck\nmeeting-notes\n", "release": "changelog\nsecurity-audit\napi-docs\n"}, "sources": [], "clean_empty_dirs": true, "platform": "darwin", "autostart": true}, "usage": {"api-docs": {"total": 9, "d7": 9, "d30": 9, "today": 3, "last_day": "2026-07-14", "projects": 1, "by_agent": {"claude": {"total": 6, "d7": 6, "d30": 6, "today": 1}, "codex": {"total": 2, "d7": 2, "d30": 2, "today": 1}, "opencode": {"total": 1, "d7": 1, "d30": 1, "today": 1}}}, "changelog": {"total": 22, "d7": 13, "d30": 22, "today": 3, "last_day": "2026-07-14", "projects": 2, "by_agent": {"claude": {"total": 16, "d7": 7, "d30": 16, "today": 1}, "codex": {"total": 4, "d7": 4, "d30": 4, "today": 1}, "opencode": {"total": 2, "d7": 2, "d30": 2, "today": 1}}}, "code-review": {"total": 342, "d7": 122, "d30": 342, "today": 19, "last_day": "2026-07-14", "projects": 8, "by_agent": {"claude": {"total": 246, "d7": 92, "d30": 246, "today": 14}, "codex": {"total": 62, "d7": 21, "d30": 62, "today": 3}, "opencode": {"total": 34, "d7": 9, "d30": 34, "today": 2}}}, "commit-helper": {"total": 156, "d7": 54, "d30": 156, "today": 8, "last_day": "2026-07-14", "projects": 11, "by_agent": {"claude": {"total": 112, "d7": 40, "d30": 112, "today": 6}, "codex": {"total": 28, "d7": 7, "d30": 28, "today": 1}, "opencode": {"total": 16, "d7": 7, "d30": 16, "today": 1}}}, "dataviz": {"total": 61, "d7": 27, "d30": 61, "today": 4, "last_day": "2026-07-14", "projects": 4, "by_agent": {"claude": {"total": 44, "d7": 14, "d30": 44, "today": 2}, "codex": {"total": 11, "d7": 7, "d30": 11, "today": 1}, "opencode": {"total": 6, "d7": 6, "d30": 6, "today": 1}}}, "pdf-extract": {"total": 94, "d7": 37, "d30": 94, "today": 6, "last_day": "2026-07-14", "projects": 3, "by_agent": {"claude": {"total": 68, "d7": 23, "d30": 68, "today": 4}, "codex": {"total": 17, "d7": 7, "d30": 17, "today": 1}, "opencode": {"total": 9, "d7": 7, "d30": 9, "today": 1}}}, "security-audit": {"total": 3, "d7": 3, "d30": 3, "today": 2, "last_day": "2026-07-14", "projects": 1, "by_agent": {"claude": {"total": 2, "d7": 2, "d30": 2, "today": 1}, "codex": {"total": 1, "d7": 1, "d30": 1, "today": 1}}}, "sql-optimizer": {"total": 38, "d7": 18, "d30": 38, "today": 3, "last_day": "2026-07-14", "projects": 2, "by_agent": {"claude": {"total": 27, "d7": 7, "d30": 27, "today": 1}, "codex": {"total": 7, "d7": 7, "d30": 7, "today": 1}, "opencode": {"total": 4, "d7": 4, "d30": 4, "today": 1}}}, "test-writer": {"total": 188, "d7": 65, "d30": 188, "today": 11, "last_day": "2026-07-14", "projects": 5, "by_agent": {"claude": {"total": 135, "d7": 49, "d30": 135, "today": 8}, "codex": {"total": 34, "d7": 9, "d30": 34, "today": 2}, "opencode": {"total": 19, "d7": 7, "d30": 19, "today": 1}}}}, "bodies": {"api-docs": "---\nname: api-docs\ndescription: Generate OpenAPI docs from route definitions and keep them in sync with code. Use after changing endpoints.\n---\n\n# api-docs\n\n## 何时用 / When to use\n\n- 从路由定义生成 OpenAPI 文档并保持与代码同步。新增/修改接口后使用。\n- Generate OpenAPI docs from route definitions and keep them in sync with code. Use after changing endpoints.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "changelog": "---\nname: changelog\ndescription: Generate a user-facing changelog from commits between two tags. Use before cutting a release.\n---\n\n# changelog\n\n## 何时用 / When to use\n\n- 从两个 tag 之间的提交生成面向用户的更新日志。发版前使用。\n- Generate a user-facing changelog from commits between two tags. Use before cutting a release.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "code-review": "---\nname: code-review\ndescription: Review the working diff for correctness bugs and simplification wins, ranked by severity. Use before committing or opening a PR.\n---\n\n# code-review\n\n## 何时用 / When to use\n\n- 审查改动中的正确性缺陷与可简化处,按严重度排序输出。提交前、开 PR 前使用。\n- Review the working diff for correctness bugs and simplification wins, ranked by severity. Use before committing or opening a PR.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "commit-helper": "---\nname: commit-helper\ndescription: Read staged changes and draft a commit message matching the repo's history style. Use before git commit.\n---\n\n# commit-helper\n\n## 何时用 / When to use\n\n- 读暂存区改动,生成符合仓库历史风格的提交信息。git commit 前使用。\n- Read staged changes and draft a commit message matching the repo's history style. Use before git commit.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "dataviz": "---\nname: dataviz\ndescription: Read before charting: color formula, form heuristics, light/dark validator. Use for any chart or dashboard task.\n---\n\n# dataviz\n\n## 何时用 / When to use\n\n- 画图表前先读:配色公式、图形选择启发式、明暗双主题校验器。任何图表/仪表盘任务使用。\n- Read before charting: color formula, form heuristics, light/dark validator. Use for any chart or dashboard task.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "meeting-notes": "---\nname: meeting-notes\ndescription: Turn meeting transcripts into decisions plus an action list. Use when a transcript is pasted.\n---\n\n# meeting-notes\n\n## 何时用 / When to use\n\n- 把会议记录整理成决议 + 待办清单。用户贴入会议纪要时使用。\n- Turn meeting transcripts into decisions plus an action list. Use when a transcript is pasted.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "pdf-extract": "---\nname: pdf-extract\ndescription: Extract text and tables from PDFs, with OCR for scanned files. Use when a .pdf file is mentioned.\n---\n\n# pdf-extract\n\n## 何时用 / When to use\n\n- 从 PDF 里抽取文字与表格,支持扫描件 OCR。用户提到 .pdf 文件时使用。\n- Extract text and tables from PDFs, with OCR for scanned files. Use when a .pdf file is mentioned.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "regex-helper": "---\nname: regex-helper\ndescription: Explain gnarly regexes and offer tested alternatives. Use when a regex is hard to read.\n---\n\n# regex-helper\n\n## 何时用 / When to use\n\n- 解释复杂正则并生成带测试样例的替代写法。遇到看不懂的正则时使用。\n- Explain gnarly regexes and offer tested alternatives. Use when a regex is hard to read.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "security-audit": "---\nname: security-audit\ndescription: Review changes for injection, authz gaps, and leaked secrets. Use for auth or untrusted-input changes.\n---\n\n# security-audit\n\n## 何时用 / When to use\n\n- 审查改动中的注入、越权、密钥泄露风险。涉及认证或外部输入的改动使用。\n- Review changes for injection, authz gaps, and leaked secrets. Use for auth or untrusted-input changes.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "slide-deck": "---\nname: slide-deck\ndescription: Turn an outline into a .pptx deck using templates and layouts. Use when a deck or slides are requested.\n---\n\n# slide-deck\n\n## 何时用 / When to use\n\n- 把大纲变成 .pptx 演示文稿,套用模板与母版。用户要做 deck/slides 时使用。\n- Turn an outline into a .pptx deck using templates and layouts. Use when a deck or slides are requested.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "sql-optimizer": "---\nname: sql-optimizer\ndescription: Analyze slow-query plans and suggest indexes or rewrites. Use when a query is reported slow.\n---\n\n# sql-optimizer\n\n## 何时用 / When to use\n\n- 分析慢查询执行计划,给出索引与改写建议。用户抱怨查询慢时使用。\n- Analyze slow-query plans and suggest indexes or rewrites. Use when a query is reported slow.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "test-writer": "---\nname: test-writer\ndescription: Write unit tests for changed functions, auto-detecting the framework and existing style. Use after writing new logic.\n---\n\n# test-writer\n\n## 何时用 / When to use\n\n- 为改动的函数补单元测试,自动识别测试框架与既有风格。写完新逻辑后使用。\n- Write unit tests for changed functions, auto-detecting the framework and existing style. Use after writing new logic.\n\n## 步骤 / Steps\n\n1. …\n2. …\n"}};
+  const state = DATA.state, usage = DATA.usage, bodies = DATA.bodies;
+
+  const J = o => new Response(JSON.stringify(o),
+    {status:200, headers:{"Content-Type":"application/json; charset=utf-8"}});
+  // 和真实后端一样,按请求头里的语言给回话
+  const L = (o, zh, en) => (o === "en" ? en : zh);
+
+  function findSkill(n){ return state.skills.find(s => s.name === n); }
+
+  function setPlace(name, target, on){
+    const s = findSkill(name);
+    if(!s) return false;
+    const v = on ? "hub-link" : "absent";
+    if(Object.prototype.hasOwnProperty.call(s.places, target)) s.places[target] = v;
+    else s.places.projects[target] = v;
+    return true;
+  }
+
+  function descOf(md){
+    const m = /^description:\s*(.+)$/m.exec(md || "");
+    return m ? m[1].trim().replace(/^["']|["']$/g, "") : "";
+  }
+
+  // 只在浏览器里改得动的操作 = 真模拟;需要真实文件系统/网络的 = 提示去装本地版
+  const OPS = {
+    "/api/toggle": (b, lang) => {
+      if(!setPlace(b.skill, b.target, b.on)) return {ok:false, out:"?"};
+      return {ok:true, out: L(lang,
+        (b.on ? "已开启 " : "已关闭 ") + b.skill + "(模拟)",
+        (b.on ? "Enabled " : "Disabled ") + b.skill + " (simulated)")};
+    },
+    "/api/set-apply": (b, lang) => {
+      (state.sets[b.set] || []).forEach(n => setPlace(n, b.target, b.on));
+      const n = (state.sets[b.set] || []).length;
+      return {ok:true, out: L(lang,
+        `组合「${b.set}」的 ${n} 个技能已${b.on ? "开启" : "关闭"}(模拟)`,
+        `${n} skills in "${b.set}" ${b.on ? "enabled" : "disabled"} (simulated)`)};
+    },
+    "/api/skill": (b, lang) => {
+      bodies[b.name] = b.content;
+      const s = findSkill(b.name);
+      if(s){ s.desc = descOf(b.content); s.updated = Date.now()/1000; }
+      return {ok:true, out: L(lang, "已保存(模拟,刷新页面即复原)",
+                                    "Saved (simulated — reload to reset)")};
+    },
+    "/api/new": (b, lang) => {
+      if(findSkill(b.name)) return {ok:false, out: L(lang, `库里已有「${b.name}」`,
+                                                           `"${b.name}" already exists in the library`)};
+      const md = `---\nname: ${b.name}\ndescription: <one line: what it does + when to use it>\n---\n\n# ${b.name}\n\n<body>\n`;
+      bodies[b.name] = md;
+      const places = {claude:"absent", codex:"absent", agents:"absent", projects:{}};
+      Object.keys(state.skills[0].places.projects).forEach(k => places.projects[k] = "absent");
+      state.skills.push({name:b.name, desc:descOf(md), origin:null, places,
+                         created:Date.now()/1000, updated:Date.now()/1000});
+      return {ok:true, out: L(lang, `已新建「${b.name}」(模拟)`, `Created "${b.name}" (simulated)`)};
+    },
+    "/api/delete": (b, lang) => {
+      const i = state.skills.findIndex(s => s.name === b.name);
+      if(i >= 0) state.skills.splice(i, 1);
+      delete bodies[b.name];
+      return {ok:true, out: L(lang, `已删除「${b.name}」,真实版里会进回收站(模拟)`,
+                                    `Deleted "${b.name}" — the real version moves it to trash (simulated)`)};
+    },
+    "/api/set": (b, lang) => {
+      state.sets[b.name] = b.skills || [];
+      state.sets_raw[b.name] = b.skills || [];
+      return {ok:true, out: L(lang, "组合已保存(模拟)", "Set saved (simulated)")};
+    },
+    "/api/set-delete": (b, lang) => {
+      delete state.sets[b.name]; delete state.sets_raw[b.name];
+      return {ok:true, out: L(lang, "组合已删除(模拟)", "Set deleted (simulated)")};
+    },
+    "/api/settings": (b, lang) => {
+      Object.assign(state, b);
+      return {ok:true, out: L(lang, "设置已保存(模拟)", "Settings saved (simulated)")};
+    },
+  };
+
+  // 这些真的需要你机器上的文件系统或联网,模拟板做不到,也不该假装做得到
+  const NEEDS_LOCAL = ["/api/open", "/api/pick-dir", "/api/scan", "/api/import", "/api/adopt",
+                       "/api/adopt-bulk", "/api/relink", "/api/diff", "/api/targets/clean",
+                       "/api/source/add", "/api/source/import", "/api/source/fork",
+                       "/api/source/remove", "/api/source/check", "/api/source/update"];
+
+  const realFetch = window.fetch.bind(window);
+  window.fetch = function(input, opts){
+    const url = String(typeof input === "string" ? input : (input && input.url) || "");
+    if(!url.startsWith("/api/")) return realFetch(input, opts);
+
+    const [path, qs] = url.split("?");
+    const q = new URLSearchParams(qs || "");
+    const method = ((opts && opts.method) || "GET").toUpperCase();
+    const lang = (opts && opts.headers && opts.headers["X-Hub-Lang"]) === "en" ? "en" : "zh";
+
+    if(method === "GET"){
+      if(path === "/api/state") return Promise.resolve(J(state));
+      if(path === "/api/usage") return Promise.resolve(J({ok:true, skills:usage}));
+      if(path === "/api/skill"){
+        const n = q.get("name");
+        return Promise.resolve(J(n in bodies
+          ? {ok:true, content:bodies[n], readonly:false}
+          : {ok:false, out:"Skill not found"}));
+      }
+      return Promise.resolve(J({ok:false, out:"not found"}));
+    }
+
+    let body = {};
+    try { body = JSON.parse((opts && opts.body) || "{}"); } catch(e){}
+
+    if(OPS[path]) return Promise.resolve(J(OPS[path](body, lang)));
+    if(NEEDS_LOCAL.includes(path)){
+      if(window.demoNudge) window.demoNudge();
+      return Promise.resolve(J({ok:false, out: L(lang,
+        "这一步要读写你自己的电脑或者联网,模拟板做不到 —— 装个本地版就能用了。",
+        "This step needs your own filesystem or the network — the demo can't do it. Install locally and it works.")}));
+    }
+    return Promise.resolve(J({ok:false, out:"not found"}));
+  };
+})();
+</script>
+
+
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+const base=p=>p.split(/[\\/]/).filter(Boolean).pop();
+const TOKEN="demo";
+let S=null, TAB=localStorage.getItem("tab")||"skills", FILTER="all", ED=null, SE_ORIG=null;
+let SKILL_SORT=localStorage.getItem("sk_sort")||"name";
+if(SKILL_SORT==="default")SKILL_SORT="name";   // 兼容旧 localStorage
+const SORT_DEFAULT_DIR={name:"asc",refs:"desc",uses:"desc",created:"desc",updated:"desc"};
+let SKILL_DIR=localStorage.getItem("sk_dir")||SORT_DEFAULT_DIR[SKILL_SORT]||"desc";
+let USAGE=null, USAGE_LOADING=false;
+let LANG=localStorage.getItem("lang")||detectLang();
+function detectLang(){
+  const bl=(navigator.language||navigator.languages?.[0]||"").toLowerCase();
+  return bl.startsWith("en")?"en":"zh";
+}
+
+const I18N={
+zh:{
+app_name:"技能库",app_sub:"一处管理 · 处处可用",
+nav_skills:"技能",nav_sets:"组合",nav_usage:"使用情况",nav_sources:"网上来源",nav_settings:"设置",
+autostart_on:"管理台常驻 运行中",autostart_off:"管理台常驻 未注册",lang_switch:"EN",
+// 技能页
+h_skills:"技能",sub_skills:"技能保存在库里,删不丢、改全生效。开关拨绿 = 在那个地方能用。",
+btn_open_lib:"打开库目录",btn_scan:"扫描本机技能",btn_import:"导入目录",btn_browse:"浏览…",btn_add_online:"从网上添加",btn_new_skill:"＋ 新建技能",
+t_scan_range:"在这些位置里找还没进库的技能:",t_scan_range_proj:"已登记项目(各自的 .claude/.codex/.agents/skills):",
+dd_more:"更多扫描范围",dd_scan_global:"只扫描全局目录",dd_scan_global_hint:".claude/skills、.codex/skills、.agents/skills",
+dd_scan_project:"只扫描项目目录",dd_scan_project_empty:"还没有登记任何项目,先在某个技能卡片上点「＋项目」",
+t_import_hint:"导入目录 = 你指定任意目录(单个技能或一堆技能),复制进库,原目录不动。跟「扫描本机技能」的区别:那个只在固定的几个位置(全局 + 已登记项目)里找,这个你想导哪就导哪。",
+ph_search:"搜技能名或描述…",chip_all:"全部",chip_own:"自建",chip_ext:"网上引入",
+sort_label:"排序",sort_name:"名称",sort_refs:"引用数",sort_uses:"触发次数",sort_created:"创建时间",sort_updated:"更新时间",
+sort_dir_asc:"当前正序,点击切为倒序",sort_dir_desc:"当前倒序,点击切为正序",
+meta_created:"创建",meta_updated:"更新",
+empty_skills:"没有匹配的技能",no_desc:"还没写 description",
+agent_claude:"Claude Code",agent_codex:"Codex",agent_opencode:"OpenCode",
+pill_claude:"Claude 全局",pill_codex:"Codex 全局",pill_agents:"Agents 全局",pill_add_proj:"＋ 项目",
+t_edit:"编辑",t_view:"查看",t_check_update:"检查上游更新",t_fork:"转为独立副本,以后可编辑,不再跟随来源",t_delete:"删除",
+t_open_dir:"打开这个技能的文件夹,放脚本等其他文件",t_open_dir_btn:"打开目录",
+t_add_proj_title:"在某个项目目录里单独启用",
+// 警告
+w_view_diff:"查看差异",w_relink:"收回为软链接",
+t_place_project:"项目 PATH(.KIND)",few_more_suffix:" 等",
+w_broken_msg:"PLACE 有 COUNT 个失联的技能链接(NAMES),把开关拨掉即可清除",
+w_unmanaged_msg:"PLACE 有 COUNT 个技能还没进库(NAMES),可用「SCANBTN」接管",
+w_stale_msg:"项目 PATH 目录已不存在,可在「使用情况」页点\"CLEANBTN\"",
+w_diverged_msg:"PLACE 有 COUNT 个独立副本内容已和库里不同:",
+// onboard
+ob_title:"三句话看懂这个页面",ob_1:"① 你所有的 AI 技能都保存在这台电脑的技能库里,删不丢、改全生效。",
+ob_2:"② 每个技能下面有一排开关,拨绿 = 在那里能用,再点一下就关。",
+ob_3:"③ 网上来源的下载、检查更新、合入更新都只在你点击时发生;本工具只负责管理,不验证第三方内容的安全性,引入前请自行阅读。",
+ob_gotit:"知道了,不再显示",
+// 组合页
+h_sets:"组合",sub_sets:"把常一起用的技能存成一组,一键开到某个地方、一键关掉。组合只是清单,不影响技能本身。",
+btn_new_set:"＋ 新建组合",n_skills:"个技能",btn_apply:"开启到…",btn_close:"关闭…",btn_edit:"编辑",btn_delete:"删除",
+empty_sets:"还没有组合。把常一起用的技能建一组,以后一键开关。",empty_set_hint:"(空组合,点「编辑」加技能)",
+set_missing:"库里没有这个技能",
+// 使用情况页
+h_usage:"使用情况",sub_usage:"每个地方各自开了哪些技能。全局 = 所有会话都能用;项目 = 只在那个目录里能用。",
+btn_clean:"清理失效项目",h_global:"全局",h_projects:"各项目",n_places:"处",ph_search_proj:"搜项目…",
+empty_proj_new:"还没有项目在用技能。在「技能」页点某个技能的「＋ 项目」即可。",empty_proj_match:"没有匹配的项目",
+use_n_skills:"个技能",use_no_skill:"这里没开任何技能",use_pick:"＋ 开启技能",use_close_title:"点击在这里关闭",
+cc_claude:"Claude Code(全局)",cc_codex:"Codex(全局)",cc_agents:"Agents(通用,全局)",
+stale_proj:"失效项目(目录已不存在):",
+// 用量分析页
+nav_insights:"用量分析",h_insights:"用量分析",
+sub_insights:"引用数按当前开关状态实时算;触发次数来自 Claude Code / Codex / OpenCode 的本地会话记录(Cursor 暂不支持)。Codex 没有专门的技能调用记录,数的是命令里出现 SKILL.md 路径的次数,会比实际更粗略。首次统计要扫一遍本机历史会话,可能要几秒。",
+btn_refresh_usage:"刷新统计",lb_scanning:"统计中…(首次扫描可能要几秒)",lb_empty:"还没有可统计的技能",
+range_today:"今天",range_d7:"近7天",range_d30:"近30天",range_total:"累计",
+kpi_period:"所选时段触发",kpi_period_sub:"覆盖 COUNT 个技能",
+kpi_top:"最活跃技能",kpi_top_sub:"COUNT 次·NAME",kpi_none:"暂无数据",
+kpi_covered:"已触发覆盖率",kpi_covered_sub:"HIT / TOTAL 个已入库技能",
+kpi_never:"从未触发",kpi_never_sub:"占入库技能 PCT%",
+sort_by_refs:"按引用数排序",sort_by_metric:"按触发次数排序",
+col_skill:"技能",col_ref_global:"全局引用",col_ref_proj:"项目引用",col_last:"最后一次",lb_never:"从未触发",
+lb_untracked:"另有 COUNT 个未入库的技能也被触发过,共 N 次",
+// 来源页
+h_sources:"网上来源",
+sub_sources:"别人的技能仓库先下载到本机隔离目录,挑着引入;引入的是当时内容的快照。下载、检查更新、合入更新都只在你点击时发生。",
+sub_sources_b:"本工具只负责管理,不验证第三方内容的安全性--引入或更新前请自行阅读内容。",
+h_add_repo:"添加技能仓库",btn_download:"下载来源(联网)",btn_check_remote:"检查远端更新(联网)",
+btn_remove_src:"移除来源",btn_expand:"展开",btn_collapse:"收起",skill_list_suffix:"技能列表",
+n_imported:"已引入",local_dir:"(本地目录)",empty_src:"还没有添加任何来源。粘贴一个技能仓库地址试试。",
+empty_src_skills:"这个仓库里没找到技能",
+imp_ref:"引入 · 跟随更新",imp_copy:"引入 · 独立副本",
+imp_ref_title:"以后可在你手动检查、确认后跟进上游更新",imp_copy_title:"复制一份归自己,与来源脱钩",
+tag_imported_ref:"跟随更新",tag_imported_copy:"独立副本",tag_imported_prefix:"已引入为",
+// 设置页
+h_settings:"设置",h_behavior:"行为",clean_empty_label:"从项目移除技能后,若 .claude/.codex/.agents 目录已空则一并删掉(保持项目干净;全局目录永不动)",
+h_boundary:"本工具的边界",
+bnd_1:"· 只管理技能的存储、来源、组合与启用位置,不执行技能内容,不自动下载任何东西。",
+bnd_2:"· 所有联网动作(下载来源 / 检查更新 / 执行更新)都只在你点击对应按钮时发生。",
+bnd_3:"· 不验证第三方技能的内容;引入、开启前请自行阅读。",
+h_service:"后台服务",svc_on:"● 管理台常驻(开机自启):运行中",svc_off:"○ 管理台常驻(开机自启):未注册(见 README 配置)",
+// dialog 通用
+cancel:"取消",save:"保存",ok:"确定",close:"关闭",confirm_btn:"确定",
+// editor dialog
+ed_open_skill:"打开目录",ed_save:"保存",ed_cancel:"取消",
+// ask dialog
+ask_cancel:"取消",ask_ok:"确定",
+// diff dialog
+diff_title:"差异",diff_hint:"左 library/=库(真源),右=该放置点副本。绿行=库里有的, 红行=副本独有的改动。",
+diff_close:"关闭",diff_relink:"收回为软链接",
+// setEditor dialog
+se_name_label:"组合名",se_hint:"勾选要放进这组的技能;悬浮卡片可看完整说明。",se_cancel:"取消",se_save:"保存",
+se_ph:"my-set(小写字母、数字、连字符)",
+// srcCheck dialog
+sc_close:"关闭",
+// JS 动态消息
+m_new_skill_t:"新建技能",m_new_skill_h:"名字只能用小写字母、数字、连字符。页面只编辑 SKILL.md;脚本等其他文件建好后用「打开目录」放进技能文件夹。",
+m_scan_toast:"正在扫描本机 .claude/.codex/.agents…",m_scan_none:"没有发现库外的技能,都已在库里了",
+m_scan_t:"发现 COUNT 个库外技能",m_scan_h:"勾选要收进库的,点确定。收编 = 移进库、原位置留引用,用法不变;之后就能统一开关。",
+m_import_t:"从目录导入技能",m_import_h:"支持单个技能目录(内有 SKILL.md),或装着多个技能子目录的文件夹。只认 SKILL.md 这一个标准,其余文件原样保留。如果某个技能本来就在 .claude/.codex/.agents 的标准位置下,会按「收编」处理——移入库、原位置留软链接;其余按「导入」处理——复制进库,原目录不动。",
+m_import_find:"查找技能",m_import_empty:"这个目录里没找到带 SKILL.md 的技能",
+m_imp_ph:"/Users/you/Downloads/xxx-skills",
+m_addproj_t:"在某个项目里用「SKILL」",m_addproj_h:"输入项目目录的完整路径,并选择放进哪个目录;这个技能将只对该项目生效",
+m_addproj_ph:"/Users/you/my-project",
+m_pick_t:"在「LABEL」开启技能",m_pick_h:"点一个立即开启",m_pick_open:"开启",m_pick_empty:"所有技能都已在这里开启",
+m_apply_t:"ACT 组合「NAME」",m_apply_h:"选择作用位置:从下面选一个,或在下方填自定义项目目录",
+m_apply_sel:"选择已注册的位置",m_apply_custom:"或填一个自定义项目目录(留空则用上面选的)",
+m_del_skill:"确定删除「NAME」?自建技能会进回收站(不真删),网上引入的只是撤掉快照。",
+m_del_set:"删除组合「NAME」?只删清单,技能本身不受影响。",
+m_relink_c:"把「NAME」在 WHERE 的独立副本收回为软链接(跟随库)?\n\n库内容视为真源。副本里的本地改动会备份到 attic/trash(不真删),之后该处跟随库。",
+m_remove_src_c:"移除来源「NAME」?已转为独立副本的技能不受影响。",
+m_remove_blocked:"⚠ 还有 COUNT 个\"跟随更新\"的技能引用此来源,无法删除来源仓库(它们还需要仓库做检查更新):",
+m_remove_fork:"转副本",m_remove_fork_hint:"转副本后即可删除来源",m_remove_toast:"来源被跟随更新的技能引用,无法删除(见卡片内提示)",
+m_remove_hint:"已引入的技能在「技能」页用「检查更新」跟进上游。",
+m_dl_ing:"下载中…",m_chk_remote_t:"检查更新 · NAME",m_chk_ing:"正在联网检查远端…",m_chk_fail:"检查失败",
+m_chk_latest:"✓ 已是最新",m_chk_behind:"远端有 COUNT 个新提交(目标版本 VER)",
+m_chk_affect:"影响 COUNT 个跟随更新的技能(NAMES)。先看下面的提交列表和受影响文件,确认后再更新;更新只会前进到上面这个版本。",
+m_chk_update_btn:"更新已关联技能到该版本",m_sync_ing:"正在同步快照…",m_sync_done:"✓ 更新完成",
+m_diff_ing:"正在比较…",m_diff_fail:"读取失败",m_diff_none:"(无差异)",
+m_diff_title:"差异:NAME",
+m_ed_ref:"查看 NAME",m_ed_edit:"编辑 NAME",
+m_ed_hint_ref:"跟随更新的技能只读;想改就先「转为我的副本」",m_ed_hint_own:"这里只编辑 SKILL.md;脚本等其他文件用「打开目录」放进去。保存即处处生效",
+m_se_edit:"编辑组合",m_se_new:"新建组合",m_se_empty:"库里还没有技能",
+m_se_name_err:"组合名只能用小写字母、数字、连字符",m_se_dup:"组合「NAME」已存在,换一个名字或用编辑改它",
+m_no_desc_i:"还没写 description",
+m_row_conflict:"库里已有同名,跳过",m_row_invalid:"名字须小写字母/数字/连字符,改名后再来",
+m_row_adopt:"收编",m_row_adopt_hint:"源在标准技能目录下,会移入库、原位置留软链接(不是复制)",
+m_proj_label:"项目",m_empty_count:"处",
+radio_claude:".claude(Claude Code)",radio_codex:".codex(Codex)",radio_agents:".agents(通用)"
+},
+en:{
+app_name:"Skills Hub",app_sub:"Manage once · Use everywhere",
+nav_skills:"Skills",nav_sets:"Sets",nav_usage:"Usage",nav_sources:"Sources",nav_settings:"Settings",
+autostart_on:"Service: Running",autostart_off:"Service: Not registered",lang_switch:"中文",
+h_skills:"Skills",sub_skills:"Skills live in the library. Toggle green = available there. Changes propagate everywhere.",
+btn_open_lib:"Open Library",btn_scan:"Scan Local Skills",btn_import:"Import Dir",btn_browse:"Browse…",btn_add_online:"Add Online",btn_new_skill:"＋ New Skill",
+t_scan_range:"Looks for unmanaged skills in these locations:",t_scan_range_proj:"Registered projects (each project's .claude/.codex/.agents/skills):",
+dd_more:"More scan scopes",dd_scan_global:"Scan global dirs only",dd_scan_global_hint:".claude/skills, .codex/skills, .agents/skills",
+dd_scan_project:"Scan project dirs only",dd_scan_project_empty:"No registered projects yet — click \"+ Project\" on a skill card first",
+t_import_hint:"Import Dir = pick any directory (one skill, or a folder of skills) and copy it into the library, original untouched. Unlike \"Scan Local Skills\", which only looks in fixed locations (global + registered projects), this can import from anywhere.",
+ph_search:"Search name or description…",chip_all:"All",chip_own:"Own",chip_ext:"Imported",
+sort_label:"Sort",sort_name:"Name",sort_refs:"References",sort_uses:"Triggers",sort_created:"Created",sort_updated:"Updated",
+sort_dir_asc:"Ascending — click for descending",sort_dir_desc:"Descending — click for ascending",
+meta_created:"Created",meta_updated:"Updated",
+empty_skills:"No matching skills",no_desc:"No description yet",
+agent_claude:"Claude Code",agent_codex:"Codex",agent_opencode:"OpenCode",
+pill_claude:"Claude Global",pill_codex:"Codex Global",pill_agents:"Agents Global",pill_add_proj:"＋ Project",
+t_edit:"Edit",t_view:"View",t_check_update:"Check upstream for updates",t_fork:"Convert to standalone copy (editable, no longer follows source)",t_delete:"Delete",
+t_open_dir:"Open this skill's folder to add scripts and other files",t_open_dir_btn:"Open Dir",
+t_add_proj_title:"Enable in a specific project directory",
+w_view_diff:"View diff",w_relink:"Relink to library",
+t_place_project:"Project PATH (.KIND)",few_more_suffix:" and more",
+w_broken_msg:"PLACE has COUNT broken skill link(s) (NAMES) — flip the toggle off to clear",
+w_unmanaged_msg:"PLACE has COUNT skill(s) not yet in the library (NAMES) — use \"SCANBTN\" to adopt",
+w_stale_msg:"Project PATH no longer exists — click \"CLEANBTN\" on the Usage page",
+w_diverged_msg:"PLACE has COUNT standalone copy(ies) that differ from the library:",
+ob_title:"This page in 3 sentences",ob_1:"① All your AI skills are stored locally on this machine. Changes propagate everywhere.",
+ob_2:"② Each skill has a row of toggles. Green = enabled there. Click again to disable.",
+ob_3:"③ Downloads, update checks, and merges only happen when you click. This tool manages only — it does not vet third-party content. Read before importing.",
+ob_gotit:"Got it, don't show again",
+h_sets:"Sets",sub_sets:"Group skills you use together. Toggle a set on/off to a location. Sets are just lists — they don't modify skills.",
+btn_new_set:"＋ New Set",n_skills:"skills",btn_apply:"Apply to…",btn_close:"Remove from…",btn_edit:"Edit",btn_delete:"Delete",
+empty_sets:"No sets yet. Group skills you use together for one-click toggling.",empty_set_hint:"(empty set, click Edit to add skills)",
+set_missing:"This skill is not in the library",
+h_usage:"Usage",sub_usage:"Which skills are enabled where. Global = all sessions; Project = that directory only.",
+btn_clean:"Clean Stale Projects",h_global:"Global",h_projects:"Projects",n_places:"places",ph_search_proj:"Search projects…",
+empty_proj_new:"No projects using skills yet. Click ＋ Project on a skill in the Skills page.",empty_proj_match:"No matching projects",
+use_n_skills:"skills",use_no_skill:"No skills enabled here",use_pick:"＋ Enable Skill",use_close_title:"Click to disable here",
+cc_claude:"Claude Code (global)",cc_codex:"Codex (global)",cc_agents:"Agents (general, global)",
+stale_proj:"Stale projects (directory no longer exists): ",
+nav_insights:"Insights",h_insights:"Usage Insights",
+sub_insights:"Reference counts are computed live from current toggles. Trigger counts come from local session logs of Claude Code / Codex / OpenCode (Cursor not supported yet). Codex has no dedicated skill-call log, so it counts how often a SKILL.md path shows up in its commands — rougher than the others. The first run scans local session history and may take a few seconds.",
+btn_refresh_usage:"Refresh Stats",lb_scanning:"Scanning… (first run may take a few seconds)",lb_empty:"No skills to show yet",
+range_today:"Today",range_d7:"7 days",range_d30:"30 days",range_total:"All time",
+kpi_period:"Triggers in range",kpi_period_sub:"across COUNT skills",
+kpi_top:"Most active skill",kpi_top_sub:"COUNT uses · NAME",kpi_none:"No data yet",
+kpi_covered:"Skills ever triggered",kpi_covered_sub:"HIT / TOTAL in library",
+kpi_never:"Never triggered",kpi_never_sub:"PCT% of library",
+sort_by_refs:"Sort by refs",sort_by_metric:"Sort by triggers",
+col_skill:"Skill",col_ref_global:"Global refs",col_ref_proj:"Project refs",col_last:"Last used",lb_never:"Never",
+lb_untracked:"COUNT more skill(s) outside the library were also triggered, N times total",
+h_sources:"Online Sources",
+sub_sources:"Clone skill repos to an isolated local directory, then pick skills to import. Imports are snapshots of the current version. Downloads and updates only happen when you click.",
+sub_sources_b:"This tool manages only — it does not vet third-party content. Read before importing or updating.",
+h_add_repo:"Add Skill Repository",btn_download:"Download (online)",btn_check_remote:"Check Remote Updates (online)",
+btn_remove_src:"Remove Source",btn_expand:"Expand",btn_collapse:"Collapse",skill_list_suffix:" skill list",
+n_imported:"imported",local_dir:"(local directory)",empty_src:"No sources added yet. Paste a skill repo URL to try.",
+empty_src_skills:"No skills found in this repo",
+imp_ref:"Import · Follow Updates",imp_copy:"Import · Standalone Copy",
+imp_ref_title:"Manually check and follow upstream updates later",imp_copy_title:"Copy as your own, detached from upstream",
+tag_imported_ref:"Follow Updates",tag_imported_copy:"Standalone Copy",tag_imported_prefix:"Imported as",
+h_settings:"Settings",h_behavior:"Behavior",clean_empty_label:"After removing a skill from a project, delete empty .claude/.codex/.agents dirs (keeps projects clean; global dirs are never touched)",
+h_boundary:"Boundaries",
+bnd_1:"· Only manages skill storage, sources, sets, and enable locations. Does not execute skill content or auto-download anything.",
+bnd_2:"· All network actions (download / check updates / apply updates) only happen when you click the corresponding button.",
+bnd_3:"· Does not vet third-party skill content. Read before importing or enabling.",
+h_service:"Background Service",svc_on:"● Service (auto-start): Running",svc_off:"○ Service (auto-start): Not registered (see README)",
+cancel:"Cancel",save:"Save",ok:"OK",close:"Close",confirm_btn:"OK",
+ed_open_skill:"Open Dir",ed_save:"Save",ed_cancel:"Cancel",
+ask_cancel:"Cancel",ask_ok:"OK",
+diff_title:"Diff",diff_hint:"Left library/=source of truth, right=copy at this location. Green=library-only, Red=copy-only changes.",
+diff_close:"Close",diff_relink:"Relink to Library",
+se_name_label:"Set name",se_hint:"Check skills to include in this set. Hover a card for full description.",se_cancel:"Cancel",se_save:"Save",
+se_ph:"my-set (lowercase, digits, hyphens)",
+sc_close:"Close",
+m_new_skill_t:"New Skill",m_new_skill_h:"Name must be lowercase, digits, hyphens. Only SKILL.md is edited here; add scripts and other files via Open Dir.",
+m_scan_toast:"Scanning local .claude/.codex/.agents…",m_scan_none:"No unmanaged skills found — all are already in the library",
+m_scan_t:"Found COUNT unmanaged skills",m_scan_h:"Check the ones to adopt. Adopt = move into library, leave a link at the original location. Usage unchanged.",
+m_import_t:"Import from Directory",m_import_h:"Supports a single skill directory (with SKILL.md) or a folder of skill subdirectories. Only SKILL.md is recognized; other files are preserved as-is. If a skill is already inside a standard .claude/.codex/.agents location, it's adopted — moved into the library with a symlink left behind. Otherwise it's imported — copied into the library, original untouched.",
+m_import_find:"Find Skills",m_import_empty:"No skills with SKILL.md found in this directory",
+m_imp_ph:"/Users/you/Downloads/xxx-skills",
+m_addproj_t:"Enable \"SKILL\" in a Project",m_addproj_h:"Enter the full project directory path and choose which folder. The skill will only be available in that project.",
+m_addproj_ph:"/Users/you/my-project",
+m_pick_t:"Enable Skill in \"LABEL\"",m_pick_h:"Click one to enable immediately",m_pick_open:"Enable",m_pick_empty:"All skills are already enabled here",
+m_apply_t:"ACT set \"NAME\"",m_apply_h:"Choose a target: pick from the list below, or enter a custom project directory",
+m_apply_sel:"Select a registered location",m_apply_custom:"Or enter a custom project directory (leave empty to use the selection above)",
+m_del_skill:"Delete \"NAME\"? Own skills go to trash (not permanently deleted). Imported skills just drop the snapshot.",
+m_del_set:"Delete set \"NAME\"? Only the list is removed; skills are unaffected.",
+m_relink_c:"Relink the standalone copy of \"NAME\" at WHERE to the library (follow library)?\n\nLibrary content is the source of truth. Local changes in the copy will be backed up to attic/trash (not deleted).",
+m_remove_src_c:"Remove source \"NAME\"? Skills already converted to standalone copies are unaffected.",
+m_remove_blocked:"⚠ COUNT \"Follow Updates\" skill(s) still reference this source — cannot delete (they need the repo for update checks):",
+m_remove_fork:"Make Copy",m_remove_fork_hint:"Convert to copy, then you can delete the source",m_remove_toast:"Source is referenced by follow-update skills — cannot delete (see card hint)",
+m_remove_hint:"Imported skills can check for updates from the Skills page.",
+m_dl_ing:"Downloading…",m_chk_remote_t:"Check Updates · NAME",m_chk_ing:"Checking remote…",m_chk_fail:"Check failed",
+m_chk_latest:"✓ Up to date",m_chk_behind:"Remote has COUNT new commit(s) (target version VER)",
+m_chk_affect:"Affects COUNT follow-update skill(s): NAMES. Review the commits and affected files below before updating. Update only advances to the version shown above.",
+m_chk_update_btn:"Update Followed Skills to This Version",m_sync_ing:"Syncing snapshot…",m_sync_done:"✓ Update complete",
+m_diff_ing:"Comparing…",m_diff_fail:"Read failed",m_diff_none:"(no differences)",
+m_diff_title:"Diff: NAME",
+m_ed_ref:"View NAME",m_ed_edit:"Edit NAME",
+m_ed_hint_ref:"Follow-update skill is read-only. Convert to standalone copy to edit.",m_ed_hint_own:"Only SKILL.md is edited here. Use Open Dir for scripts and other files. Changes propagate everywhere.",
+m_se_edit:"Edit Set",m_se_new:"New Set",m_se_empty:"No skills in the library yet",
+m_se_name_err:"Set name must be lowercase, digits, hyphens",m_se_dup:"Set \"NAME\" already exists — use Edit to modify it",
+m_no_desc_i:"No description yet",
+m_row_conflict:"Name exists in library, skipped",m_row_invalid:"Name must be lowercase/digits/hyphens",
+m_row_adopt:"Adopt",m_row_adopt_hint:"Source is in a standard skill dir — will move into library and leave a symlink (not a copy)",
+m_proj_label:"Project",m_empty_count:"places",
+radio_claude:".claude (Claude Code)",radio_codex:".codex (Codex)",radio_agents:".agents (general)"
+}};
+function t(k){return (I18N[LANG]&&I18N[LANG][k])||I18N.zh[k]||k}
+function tf(k,vars){let s=t(k);if(vars)for(const[k2,v]of Object.entries(vars))s=s.replace(k2,v);return s}
+function applyI18n(){
+  document.title=t('app_name');
+  document.documentElement.lang=LANG==='en'?'en':'zh-CN';
+  document.querySelectorAll('[data-i18n]').forEach(e=>e.textContent=t(e.dataset.i18n));
+  document.querySelectorAll('[data-i18n-ph]').forEach(e=>e.placeholder=t(e.dataset.i18nPh));
+  document.querySelectorAll('[data-i18n-title]').forEach(e=>e.title=t(e.dataset.i18nTitle));
+}
+function toggleLang(){LANG=LANG==="zh"?"en":"zh";localStorage.setItem("lang",LANG);render();applyI18n()}
+
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");
+  clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("show"),3600)}
+
+async function api(p,b){const r=await fetch(p,{method:"POST",
+  headers:{"Content-Type":"application/json","X-Hub-Token":TOKEN,"X-Hub-Lang":LANG},
+  body:JSON.stringify(b)});return await r.json()}
+async function post(p,b){const j=await api(p,b);if(j.out)toast(j.out);await load();return j}
+
+function typing(){ // 正在页面内的输入框里打字时,刷新不要重渲染把内容吞掉
+  const a=document.activeElement;
+  return a&&["INPUT","TEXTAREA","SELECT"].includes(a.tagName)&&$("#page").contains(a);
+}
+async function load(){S=await (await fetch("/api/state")).json();
+  if(typing())renderNav();else render()}
+
+function show(t){TAB=t;localStorage.setItem("tab",t);if(t==="insights")loadUsage();render()}
+async function loadUsage(){
+  if(USAGE_LOADING)return;
+  USAGE_LOADING=true;
+  try{const j=await fetch("/api/usage").then(r=>r.json());if(j.ok)USAGE=j.skills}
+  catch(e){}
+  finally{USAGE_LOADING=false}
+  if(!typing())render();
+}
+
+/* ---------- 徽章 ---------- */
+function trunc(s,n){return s&&s.length>n?s.slice(0,n)+"…":s||""}
+function sourceUrl(name){
+  const src=S.sources.find(s=>s.name===name);
+  if(!src||!src.url)return "";
+  let u=src.url.replace(/\.git$/,"");
+  // SSH 格式 git@github.com:owner/repo -> https://github.com/owner/repo
+  const m=u.match(/^git@([^:]+):(.+)$/);
+  return m?`https://${m[1]}/${m[2]}`:u;
+}
+function originTag(o){
+  if(!o||o.type==="own")return `<span class="tag src-own">${t('chip_own')}</span>`;
+  const url=o.source?sourceUrl(o.source):"";
+  const name=esc(trunc(o.source||"",12));
+  const link=url?`<a class="src-link" href="${esc(url)}" target="_blank" rel="noopener" title="${esc(o.source||"")}">${name}</a>`:`<span>${name}</span>`;
+  if(o.type==="ref")return `<span class="tag src-ref" title="${t('tag_imported_ref')}">${'⇅'} ${link}</span>`;
+  return `<span class="tag src-copy" title="${t('tag_imported_copy')}">${'⧉'} ${link}</span>`;
+}
+function pill(skill,target,label,state,title){
+  const offLabel=LANG==='en'?'Click to disable':'点击关闭';
+  const onLabel=LANG==='en'?'Click to enable':'点击开启';
+  if(state==="hub-link"||state==="copy-synced")
+    return `<span class="pill on" title="${offLabel} · ${esc(title)}" onclick="toggle('${esc(target)}','${skill}',false)">${esc(label)}</span>`;
+  if(state==="absent")
+    return `<span class="pill" title="${onLabel} · ${esc(title)}" onclick="toggle('${esc(target)}','${skill}',true)">${esc(label)}</span>`;
+  const warnTitle=LANG==='en'?'Not managed by this library - see top notice':'这一处不归本库管,见顶部提示';
+  return `<span class="pill warn" title="${state}: ${warnTitle}">${esc(label)} ⚠</span>`;
+}
+
+/* ---------- 侧边栏 ---------- */
+const ICONS={
+skills:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
+sets:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l9 5-9 5-9-5 9-5z"/><path d="M3 12l9 5 9-5"/><path d="M3 17l9 5 9-5"/></svg>',
+usage:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h6l2-7 4 14 2-7h4"/></svg>',
+sources:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.7 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.7-3.8-9S9.5 5.6 12 3z"/></svg>',
+settings:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.01a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55h.01a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.01a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1z"/></svg>',
+insights:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><rect x="7" y="13" width="3" height="5" rx="1"/><rect x="12.5" y="8" width="3" height="10" rx="1"/><rect x="18" y="4" width="3" height="14" rx="1"/></svg>'};
+
+function renderNav(){
+  const items=[
+    ["skills",t('nav_skills'),`<span class="cnt">${S.skills.length}</span>`],
+    ["sets",t('nav_sets'),`<span class="cnt">${Object.keys(S.sets).length||""}</span>`],
+    ["usage",t('nav_usage'),""],
+    ["insights",t('nav_insights'),""],
+    ["sources",t('nav_sources'),""],
+    ["settings",t('nav_settings'),""]];
+  $("#nav").innerHTML=items.map(([id,label,extra])=>
+    `<button class="${TAB===id?'active':''}" onclick="show('${id}')">${ICONS[id]}${label}${extra}</button>`).join("");
+  let sf=S.platform==="darwin"
+    ?`<div class="st ${S.autostart?'on':''}">${S.autostart?t('autostart_on'):t('autostart_off')}</div>`:"";
+  $("#sidefoot").innerHTML=sf;
+}
+
+/* ---------- 技能页 ---------- */
+function placeLabel(target){       // 机器码(如 "claude" 或 "path::kind")-> 当前语言下的展示名
+  if(["claude","codex","agents"].includes(target))return t('pill_'+target);
+  const [p,kind]=target.split("::");
+  return tf('t_place_project',{PATH:esc(p),KIND:esc(kind)});
+}
+function fewNames(names){          // 截断展示 + 语言相应的分隔符/后缀,如 "a、b、c 等" / "a, b, c and more"
+  const shown=names.slice(0,3).map(esc).join(LANG==='en'?', ':'、');
+  return names.length>3?shown+t('few_more_suffix'):shown;
+}
+function warningsHtml(){
+  let html = S.warnings.filter(w=>w.kind!=="diverged").map(w=>{
+    if(w.kind==="broken")
+      return tf('w_broken_msg',{PLACE:placeLabel(w.target),COUNT:w.names.length,NAMES:fewNames(w.names)});
+    if(w.kind==="unmanaged")
+      return tf('w_unmanaged_msg',{PLACE:placeLabel(w.target),COUNT:w.names.length,NAMES:fewNames(w.names),SCANBTN:t('btn_scan')});
+    return tf('w_stale_msg',{PATH:esc(w.target),CLEANBTN:t('btn_clean')});   // kind==="stale"
+  }).map(msg=>`<div class="warnbox">⚠ ${msg}</div>`).join("");
+  if(S.divergences && S.divergences.length){
+    const byTarget = {};
+    for(const d of S.divergences){ (byTarget[d.target]=byTarget[d.target]||[]).push(d); }
+    for(const [target, ds] of Object.entries(byTarget)){
+      const items = ds.map(d=>
+        `<span class="dv-item">${esc(d.name)}
+           <a class="dv-link" onclick="showDiff('${esc(d.name)}','${esc(d.target)}')">${t('w_view_diff')}</a>
+           <a class="dv-link" onclick="relink('${esc(d.name)}','${esc(d.target)}')">${t('w_relink')}</a>
+         </span>`).join("");
+      html += `<div class="warnbox">⚠ ${tf('w_diverged_msg',{PLACE:placeLabel(target),COUNT:ds.length})}${items}</div>`;
+    }
+  }
+  return html;
+}
+function skillMatch(k){
+  const kw=(window._kw||"").toLowerCase();
+  if(kw&&!k.name.includes(kw)&&!(k.desc||"").toLowerCase().includes(kw))return false;
+  if(FILTER==="own")return !k.origin||k.origin.type==="own";
+  if(FILTER==="ext")return k.origin&&(k.origin.type==="ref"||k.origin.type==="copy");
+  return true;
+}
+function projLabel(t){ // "path::kind" -> "目录名(·kind,claude 不标)"
+  const [p,kind]=t.split("::");
+  return base(p)+(kind&&kind!=="claude"?" ·"+kind:"");
+}
+function skillUses(k){return (USAGE&&USAGE[k.name]&&USAGE[k.name].total)||0}
+function skillRefs(k){const r=refCounts(k);return r.g+r.p}
+function fmtDate(ts){if(!ts)return "";const d=new Date(ts*1000),p=n=>String(n).padStart(2,"0");
+  return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())}
+function fmtDateTime(ts){if(!ts)return "";const d=new Date(ts*1000),p=n=>String(n).padStart(2,"0");
+  return fmtDate(ts)+" "+p(d.getHours())+":"+p(d.getMinutes())}
+function fmtDateTimeSec(ts){if(!ts)return "";const d=new Date(ts*1000),p=n=>String(n).padStart(2,"0");
+  return fmtDateTime(ts)+":"+p(d.getSeconds())}
+function skillMeta(k){
+  const parts=[];
+  if(k.created)parts.push(`<span title="${t('meta_created')} ${fmtDateTimeSec(k.created)}"><b>${t('meta_created')}</b>${fmtDateTime(k.created)}</span>`);
+  // 只有确实晚于创建 60 秒以上才算"更新过"——避开建库时写文件带来的几秒抖动
+  if(k.updated&&(!k.created||k.updated-k.created>60))
+    parts.push(`<span title="${t('meta_updated')} ${fmtDateTimeSec(k.updated)}"><b>${t('meta_updated')}</b>${fmtDateTime(k.updated)}</span>`);
+  return parts.length?`<div class="sk-meta">${parts.join("")}</div>`:"";
+}
+function sortSkills(list){
+  const cmp={
+    name:(a,b)=>a.name.localeCompare(b.name),
+    refs:(a,b)=>skillRefs(a)-skillRefs(b),
+    uses:(a,b)=>skillUses(a)-skillUses(b),
+    created:(a,b)=>(a.created||0)-(b.created||0),
+    updated:(a,b)=>(a.updated||0)-(b.updated||0),
+  }[SKILL_SORT]||((a,b)=>a.name.localeCompare(b.name));
+  const dir=SKILL_DIR==="asc"?1:-1;
+  // 方向只作用于主键;并列一律按名称 A→Z,稳定不抖
+  return [...list].sort((a,b)=>{const c=cmp(a,b)*dir;return c!==0?c:a.name.localeCompare(b.name)});
+}
+function setSkillSort(v){SKILL_SORT=v;SKILL_DIR=SORT_DEFAULT_DIR[v]||"desc";
+  localStorage.setItem("sk_sort",v);localStorage.setItem("sk_dir",SKILL_DIR);render()}
+function toggleSkillDir(){SKILL_DIR=SKILL_DIR==="asc"?"desc":"asc";
+  localStorage.setItem("sk_dir",SKILL_DIR);render()}
+function skillCards(){
+  return sortSkills(S.skills.filter(skillMatch)).map(k=>{
+    const projPills=Object.entries(k.places.projects).filter(([t,st])=>st!=="absent")
+      .map(([t,st])=>pill(k.name,t,projLabel(t),st,t.replace("::","/.")+"/skills")).join("");
+    const isRef=k.origin&&k.origin.type==="ref";
+    return `<div class="skcard">
+      <div class="sk-head"><span class="sk-name" title="${k.name}">${k.name}</span>${originTag(k.origin)}${skillUsageBadge(k)}
+        <span class="sk-acts">
+          <button class="ghost" title="${isRef?t('t_view'):t('t_edit')}" onclick="editSkill('${k.name}')">✍</button>
+          ${isRef?`<button class="ghost" title="${t('t_check_update')}" onclick="checkSource('${esc(k.origin.source)}')">↻</button>`:""}
+          ${isRef?`<button class="ghost" title="${t('t_fork')}" onclick="post('/api/source/fork',{name:'${k.name}'})">⧉</button>`:""}
+          <button class="ghost danger" title="${t('t_delete')}" onclick="delSkill('${k.name}')">✕</button></span></div>
+      <div class="sk-desc" title="${esc(k.desc)}">${esc(k.desc)||`<i>${t('m_no_desc_i')}</i>`}</div>
+      <div class="pills">
+        ${pill(k.name,"claude",t('pill_claude'),k.places.claude,"~/.claude/skills")}
+        ${pill(k.name,"codex",t('pill_codex'),k.places.codex,"~/.codex/skills")}
+        ${S.agents_root||k.places.agents!=="absent"?pill(k.name,"agents",t('pill_agents'),k.places.agents,"~/.agents/skills"):""}
+        ${projPills}
+        <span class="pill add" title="${t('t_add_proj_title')}" onclick="addProject('${k.name}')">${t('pill_add_proj')}</span>
+      </div>
+      ${skillMeta(k)}</div>`}).join("")||`<div class="empty" style="grid-column:1/-1">${t('empty_skills')}</div>`;
+}
+function pageSkills(){
+  const chips=[["all",t('chip_all')],["own",t('chip_own')],["ext",t('chip_ext')]];
+  return `
+  <div class="pagehead"><h1>${t('h_skills')}</h1>
+    <span class="acts">
+      <button class="ghost" title="${t('btn_open_lib')}" onclick="post('/api/open',{})">${t('btn_open_lib')}</button>
+      <span class="splitbtn">
+        <button title="${esc(scanRangeTitle())}" onclick="scanLocal('all')">${t('btn_scan')}</button>
+        <details class="dropdown"><summary title="${t('dd_more')}">▾</summary>
+          <div class="dropdown-menu">
+            <button onclick="this.closest('details').open=false;scanLocal('global')">
+              ${t('dd_scan_global')}<span class="dd-sub">${t('dd_scan_global_hint')}</span></button>
+            <button onclick="this.closest('details').open=false;scanLocal('project')">
+              ${t('dd_scan_project')}<span class="dd-sub">${esc(projRangeHint())}</span></button>
+          </div>
+        </details>
+      </span>
+      <button title="${esc(t('t_import_hint'))}" onclick="importDialog()">${t('btn_import')}</button>
+      <button onclick="show('sources')">${t('btn_add_online')}</button>
+      <button class="primary" onclick="newSkill()">${t('btn_new_skill')}</button></span>
+    <span class="sub">${t('sub_skills')}</span>
+  </div>
+  ${onboard()}
+  ${warningsHtml()}
+  <div class="row" style="margin-top:14px">
+    <input type="text" id="search" placeholder="${t('ph_search')}" style="width:260px"
+      value="${esc(window._kw||"")}" oninput="window._kw=this.value;$('#sklist').innerHTML=skillCards()">
+    <span class="chips" style="margin:0">${chips.map(([id,l])=>
+      `<span class="chip ${FILTER===id?'active':''}" onclick="FILTER='${id}';render()">${l}</span>`).join("")}</span>
+    <label class="hint" style="margin-left:auto;display:flex;align-items:center;gap:6px">${t('sort_label')}
+      <select onchange="setSkillSort(this.value)">
+        <option value="name" ${SKILL_SORT==='name'?'selected':''}>${t('sort_name')}</option>
+        <option value="refs" ${SKILL_SORT==='refs'?'selected':''}>${t('sort_refs')}</option>
+        <option value="uses" ${SKILL_SORT==='uses'?'selected':''}>${t('sort_uses')}</option>
+        <option value="created" ${SKILL_SORT==='created'?'selected':''}>${t('sort_created')}</option>
+        <option value="updated" ${SKILL_SORT==='updated'?'selected':''}>${t('sort_updated')}</option>
+      </select>
+      <button class="ghost sortdir" title="${t('sort_dir_'+SKILL_DIR)}" onclick="toggleSkillDir()">${SKILL_DIR==='asc'?'↑':'↓'}</button>
+    </label>
+  </div>
+  <div id="sklist" class="skgrid">${skillCards()}</div>`;
+}
+
+/* ---------- 组合页 ---------- */
+function pageSets(){
+  return `
+  <div class="pagehead"><h1>${t('h_sets')}</h1>
+    <span class="acts"><button class="primary" onclick="newSet()">${t('btn_new_set')}</button></span>
+    <span class="sub">${t('sub_sets')}</span></div>
+  ${Object.entries(S.sets).map(([n,list])=>`<div class="card">
+    <div class="row" style="justify-content:space-between">
+      <h2 style="margin:0">${esc(n)} <span class="hint" style="font-weight:400">${list.length} ${t('n_skills')}</span></h2>
+      <span class="row">
+        <button onclick="applySet('${esc(n)}',true)">${t('btn_apply')}</button>
+        <button class="ghost" onclick="applySet('${esc(n)}',false)">${t('btn_close')}</button>
+        <button class="ghost" onclick="editSet('${esc(n)}')">${t('btn_edit')}</button>
+        <button class="ghost danger" onclick="delSet('${esc(n)}')">${t('btn_delete')}</button></span></div>
+    <div class="pills" style="margin-top:8px">${list.map(s=>{
+      const k=S.skills.find(x=>x.name===s);
+      return `<span class="tag ${k?"":"miss"}" title="${k?esc(k.desc):t('set_missing')}">${esc(s)}${k?"":" ?"}</span>`}).join("")
+      ||`<span class="hint">${t('empty_set_hint')}</span>`}</div>
+  </div>`).join("")||`<div class="empty">${t('empty_sets')}</div>`}`;
+}
+async function delSet(n){
+  if(confirm(tf('m_del_set',{NAME:n})))
+    await post("/api/set-delete",{name:n});
+}
+function onboard(){
+  if(localStorage.getItem("onboarded4"))return "";
+  return `<div class="banner"><b>${t('ob_title')}</b>
+  ${t('ob_1')}<br>${t('ob_2')}<br>${t('ob_3')}
+  <a href="#" onclick="localStorage.setItem('onboarded4','1');render();return false">${t('ob_gotit')}</a></div>`;
+}
+
+/* ---------- 使用情况页 ---------- */
+function useCard(icon,label,path,target,get){
+  const used=S.skills.filter(k=>{const st=get(k);return st&&st!=="absent"});
+  return `<div class="usecard">
+    <h3><span class="loc-ico">${icon}</span>${esc(label)}<span class="n">${used.length} ${t('use_n_skills')}</span></h3>
+    <div class="path">${esc(path)}</div>
+    <div class="pills">${used.map(k=>pill(k.name,target,k.name,get(k),t('use_close_title'))).join("")||`<span class="hint">${t('use_no_skill')}</span>`}
+      <span class="pill add" onclick="pickSkill('${esc(target)}','${esc(label)}')">${t('use_pick')}</span></div></div>`;
+}
+function projCards(){
+  const q=(window._pq||"").toLowerCase();
+  const pts=S.proj_targets.filter(t=>t.path.toLowerCase().includes(q));
+  return pts.map(t=>useCard("📁",projLabel(t.target),t.path+"/."+t.kind+"/skills",
+    t.target,k=>k.places.projects[t.target])).join("")
+    ||`<div class="empty" style="grid-column:1/-1">${q?t('empty_proj_match'):t('empty_proj_new')}</div>`;
+}
+function pageUsage(){
+  return `
+  <div class="pagehead"><h1>${t('h_usage')}</h1>
+    <span class="acts"><button onclick="post('/api/targets/clean',{})">${t('btn_clean')}</button></span>
+    <span class="sub">${t('sub_usage')}</span></div>
+  <h2 style="font-size:13px;color:var(--muted);margin:18px 0 0">${t('h_global')}</h2>
+  <div class="usegrid">
+    ${useCard("C",t('cc_claude'),"~/.claude/skills","claude",k=>k.places.claude)}
+    ${useCard("X",t('cc_codex'),"~/.codex/skills","codex",k=>k.places.codex)}
+    ${S.agents_root?useCard("A",t('cc_agents'),"~/.agents/skills","agents",k=>k.places.agents):""}
+  </div>
+  <div class="row" style="margin:20px 0 0">
+    <h2 style="font-size:13px;color:var(--muted);margin:0">${t('h_projects')} <span class="hint" style="font-weight:400">${S.proj_targets.length} ${t('n_places')}</span></h2>
+    ${S.proj_targets.length>4?`<input type="text" id="projq" placeholder="${t('ph_search_proj')}" style="width:180px;margin-left:auto"
+      value="${esc(window._pq||"")}" oninput="window._pq=this.value;$('#projgrid').innerHTML=projCards()">`:""}
+  </div>
+  <div class="usegrid" id="projgrid">${projCards()}</div>
+  ${S.stale_targets.length?`<div class="warnbox">${t('stale_proj')}${S.stale_targets.map(esc).join("、")}</div>`:""}`;
+}
+
+/* ---------- 用量分析页 ---------- */
+const REF_ACTIVE=new Set(["hub-link","copy-synced","copy-diverged"]);
+let RANGE=localStorage.getItem("ins_range")||"total", SORT_REFS=false;
+function refCounts(k){
+  const g=["claude","codex","agents"].filter(kind=>REF_ACTIVE.has(k.places[kind])).length;
+  const p=Object.values(k.places.projects).filter(st=>REF_ACTIVE.has(st)).length;
+  return {g,p};
+}
+function usageRows(){
+  return S.skills.map(k=>{
+    const u=(USAGE&&USAGE[k.name])||{total:0,d7:0,d30:0,today:0,last_day:null,by_agent:{}};
+    const r=refCounts(k);
+    return {name:k.name,refG:r.g,refP:r.p,total:u.total||0,d7:u.d7||0,d30:u.d30||0,today:u.today||0,
+            last_day:u.last_day,by_agent:u.by_agent||{}};
+  });
+}
+function metricFor(row){return {today:row.today,d7:row.d7,d30:row.d30,total:row.total}[RANGE]}
+const AGENT_COLOR={claude:"var(--accent)",codex:"var(--warn)",opencode:"var(--info)"};
+const AGENT_ORDER=["claude","codex","opencode"];
+function usageHovercard(byAgent,metricKey,total){
+  if(!total)return "";
+  const rows=AGENT_ORDER.map(a=>({a,n:(byAgent&&byAgent[a]&&byAgent[a][metricKey])||0})).filter(r=>r.n>0);
+  if(!rows.length)return "";
+  return `<div class="usage-hovercard">
+    <div class="uhc-bar">${rows.map(r=>`<span style="width:${Math.round(r.n/total*100)}%;background:${AGENT_COLOR[r.a]}"></span>`).join("")}</div>
+    ${rows.map(r=>`<div class="uhc-row"><span class="uhc-dot" style="background:${AGENT_COLOR[r.a]}"></span>${t('agent_'+r.a)}<b>${r.n}</b><span class="uhc-pct">${Math.round(r.n/total*100)}%</span></div>`).join("")}
+  </div>`;
+}
+function skillUsageBadge(k){
+  if(!USAGE)return "";
+  const u=USAGE[k.name],total=(u&&u.total)||0;
+  if(!total)return "";
+  return `<span class="usage-badge hot">🔥 ${total}${usageHovercard(u.by_agent,"total",total)}</span>`;
+}
+function setRange(v){RANGE=v;localStorage.setItem("ins_range",v);render()}
+function toggleSortRefs(){SORT_REFS=!SORT_REFS;render()}
+function insightsKpis(rows){
+  let period=0,withData=0,top=null;
+  for(const r of rows){
+    const v=metricFor(r);
+    period+=v;
+    if(v>0){withData++;if(!top||v>metricFor(top))top=r}
+  }
+  const everTriggered=rows.filter(r=>r.total>0).length;
+  const totalSkills=rows.length;
+  const never=totalSkills-everTriggered;
+  const pct=totalSkills?Math.round(never/totalSkills*100):0;
+  return {period,withData,top,everTriggered,never,pct,totalSkills};
+}
+function animateKpis(){
+  document.querySelectorAll(".kpi-num[data-target]").forEach(el=>{
+    const to=parseInt(el.dataset.target,10)||0,dur=550,t0=performance.now();
+    (function step(now){
+      const p=Math.min(1,(now-t0)/dur),eased=1-Math.pow(1-p,3);
+      el.textContent=Math.round(eased*to).toLocaleString();
+      if(p<1)requestAnimationFrame(step);
+    })(t0);
+  });
+}
+function untrackedNote(){
+  if(!USAGE)return "";
+  const known=new Set(S.skills.map(k=>k.name));
+  let count=0,n=0;
+  for(const[name,u]of Object.entries(USAGE)){if(!known.has(name)){count++;n+=u.total||0}}
+  return count?`<div class="pendbox untracked-note">${tf('lb_untracked',{COUNT:count,N:n})}</div>`:"";
+}
+function leaderboardTable(rows){
+  const max=Math.max(1,...rows.map(metricFor));
+  return `<table class="lb-table"><thead><tr>
+    <th>${t('col_skill')}</th><th class="num">${t('col_ref_global')}</th><th class="num">${t('col_ref_proj')}</th>
+    <th class="bar-cell">${t('range_'+RANGE)}</th><th>${t('col_last')}</th>
+  </tr></thead><tbody>
+  ${rows.map((r,i)=>{
+    const v=metricFor(r),pct=Math.round(v/max*100);
+    const badge=(i<3&&v>0)?`<span class="rank-badge ${i===0?"r1":"r2"}">${i+1}</span>`:`<span class="rank-badge" style="visibility:hidden">·</span>`;
+    return `<tr class="${v===0?"muted-row":""}">
+      <td><div class="lb-name">${badge}<b title="${esc(r.name)}">${esc(r.name)}</b></div></td>
+      <td class="num">${r.refG}/3</td>
+      <td class="num">${r.refP}</td>
+      <td class="bar-cell"><div class="bar-row"><div class="bar-track"><div class="bar-fill" style="width:${v?pct:0}%"></div></div><span class="bar-num">${v}${usageHovercard(r.by_agent,RANGE,v)}</span></div></td>
+      <td class="hint">${r.last_day||t("lb_never")}</td>
+    </tr>`;
+  }).join("")}
+  </tbody></table>`;
+}
+function pageInsights(){
+  if(USAGE===null){
+    return `<div class="pagehead"><h1>${t('h_insights')}</h1><span class="sub">${t('sub_insights')}</span></div>
+    <div class="card" style="margin-top:18px;text-align:center;padding:34px 0"><div class="hint">${t('lb_scanning')}</div></div>`;
+  }
+  const rows=usageRows();
+  if(!rows.length){
+    return `<div class="pagehead"><h1>${t('h_insights')}</h1><span class="sub">${t('sub_insights')}</span></div>
+    <div class="empty">${t('lb_empty')}</div>`;
+  }
+  const kpi=insightsKpis(rows);
+  const sortKey=SORT_REFS?(r=>r.refG+r.refP):metricFor;
+  const sorted=[...rows].sort((a,b)=>sortKey(b)-sortKey(a)||a.name.localeCompare(b.name));
+  const ranges=["today","d7","d30","total"];
+  return `
+  <div class="pagehead"><h1>${t('h_insights')}</h1>
+    <span class="acts"><button class="ghost" onclick="loadUsage()">${t('btn_refresh_usage')}</button></span>
+    <span class="sub">${t('sub_insights')}</span></div>
+  <div class="row" style="margin:18px 0 0;align-items:center">
+    <div class="segmented">${ranges.map(r=>`<button class="${RANGE===r?"active":""}" onclick="setRange('${r}')">${t('range_'+r)}</button>`).join("")}</div>
+    <button class="ghost" style="margin-left:auto;font-size:12px" onclick="toggleSortRefs()">${SORT_REFS?t('sort_by_metric'):t('sort_by_refs')}</button>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card hero"><div class="kpi-label">${t('kpi_period')}</div>
+      <div class="kpi-num" data-target="${kpi.period}">0</div>
+      <div class="kpi-sub">${tf('kpi_period_sub',{COUNT:kpi.withData})}</div></div>
+    <div class="kpi-card"><div class="kpi-label">${t('kpi_top')}</div>
+      <div class="kpi-num"${kpi.top?` data-target="${metricFor(kpi.top)}"`:""}>${kpi.top?0:"–"}</div>
+      <div class="kpi-sub">${kpi.top?tf('kpi_top_sub',{COUNT:metricFor(kpi.top),NAME:esc(kpi.top.name)}):t('kpi_none')}</div></div>
+    <div class="kpi-card"><div class="kpi-label">${t('kpi_covered')}</div>
+      <div class="kpi-num" data-target="${kpi.everTriggered}">0</div>
+      <div class="kpi-sub">${tf('kpi_covered_sub',{HIT:kpi.everTriggered,TOTAL:kpi.totalSkills})}</div></div>
+    <div class="kpi-card"><div class="kpi-label">${t('kpi_never')}</div>
+      <div class="kpi-num" data-target="${kpi.never}">0</div>
+      <div class="kpi-sub">${tf('kpi_never_sub',{PCT:kpi.pct})}</div></div>
+  </div>
+  <div class="card">${leaderboardTable(sorted)}</div>
+  ${untrackedNote()}`;
+}
+
+/* ---------- 来源页 ---------- */
+let SRC_COLLAPSED={};   // 来源名 -> 是否收起技能列表
+function pageSources(){
+  return `
+  <div class="pagehead"><h1>${t('h_sources')}</h1>
+    <span class="sub">${t('sub_sources')}<b>${t('sub_sources_b')}</b></span></div>
+  <div class="card">
+    <h2>${t('h_add_repo')}</h2>
+    <div class="row" style="margin-top:8px">
+      <input type="text" id="srcUrl" placeholder="https://github.com/xxx/skills.git" style="flex:1;min-width:260px">
+      <button class="primary" id="srcAddBtn" onclick="addSource()">${t('btn_download')}</button></div></div>
+  ${S.sources.map(s=>{
+    const hasImp=s.skills.some(k=>k.imported_as);
+    const collapsed=SRC_COLLAPSED[s.name]!==undefined?SRC_COLLAPSED[s.name]:hasImp;
+    return `<div class="card">
+    <div class="row" style="justify-content:space-between">
+      <h2 style="margin:0">${esc(s.name)} <span class="hint" style="font-weight:400">${s.skills.length} ${t('n_skills').replace('skills','skill(s)')}${hasImp?` · ${s.skills.filter(k=>k.imported_as).length} ${t('n_imported')}`:""}</span></h2>
+      <span class="row">${s.is_git?`<button class="ghost" onclick="checkSource('${s.name}')">${t('btn_check_remote')}</button>`:""}
+        <button class="ghost" onclick="toggleSrcList('${s.name}')" id="tog-${s.name}">${collapsed?t('btn_expand'):t('btn_collapse')}${t('skill_list_suffix')}</button>
+        <button class="ghost danger" onclick="removeSource('${s.name}')">${t('btn_remove_src')}</button></span></div>
+    <div class="hint mono">${esc(s.url||t('local_dir'))}${s.head?' · '+esc(s.head):''}</div>
+    <div id="chk-${s.name}"></div>
+    <div id="list-${s.name}" style="margin-top:8px;${collapsed?"display:none":""}">${s.skills.map(k=>`<div class="srcskill">
+      <b>${esc(k.name)}</b><span class="hint" style="flex:1">${esc(k.desc)}</span>
+      ${k.imported_as?`<span class="tag done">${t('tag_imported_prefix')} ${k.imported_as}(${k.imported_type==="ref"?t('tag_imported_ref'):t('tag_imported_copy')})</span>`
+        :`<button class="ghost" onclick="importSkill('${s.name}','${esc(k.subpath)}','ref')" title="${t('imp_ref_title')}">${t('imp_ref')}</button>
+          <button class="ghost" onclick="importSkill('${s.name}','${esc(k.subpath)}','copy')" title="${t('imp_copy_title')}">${t('imp_copy')}</button>`}
+    </div>`).join("")||`<span class="hint">${t('empty_src_skills')}</span>`}</div></div>`}).join("")
+  ||`<div class="empty">${t('empty_src')}</div>`}`;
+}
+function toggleSrcList(name){
+  const list=$("#list-"+name),tog=$("#tog-"+name);
+  const now=list.style.display==="none";
+  list.style.display=now?"":"none";
+  tog.textContent=(now?t('btn_expand'):t('btn_collapse'))+t('skill_list_suffix');
+  SRC_COLLAPSED[name]=!now;
+}
+
+/* ---------- 设置页 ---------- */
+function pageSettings(){
+  return `
+  <div class="pagehead"><h1>${t('h_settings')}</h1></div>
+  <div class="card">
+    <h2>${t('h_behavior')}</h2>
+    <label class="hint" style="display:block;margin-top:6px"><input type="checkbox" id="cleanEmpty" ${S.clean_empty_dirs?"checked":""}
+      onchange="post('/api/settings',{clean_empty_dirs:this.checked})">
+      ${t('clean_empty_label')}</label>
+  </div>
+  <div class="card">
+    <h2>${t('h_boundary')}</h2>
+    <div class="hint" style="line-height:2">
+      ${t('bnd_1')}<br>
+      ${t('bnd_2')}<br>
+      ${t('bnd_3')}</div>
+  </div>
+  ${S.platform==="darwin"?`<div class="card">
+    <h2>${t('h_service')}</h2>
+    <div class="hint" style="line-height:2.2">
+      ${S.autostart?t('svc_on'):t('svc_off')}
     </div>
-  </section>
+  </div>`:""}`;
+}
 
-  <section>
-    <div class="boundary">
-      <h2>边界声明:它是管理器,不是安全扫描器</h2>
-      <ul>
-        <li>它<b>不判断技能是否安全</b>,不调用模型审核,永不执行技能自带的脚本、安装器、示例。</li>
-        <li>它<b>不自动下载任何东西</b>——所有联网动作(下载来源 / 检查更新 / 执行更新)都在明确标注"联网"的按钮后面,只在你点击时发生。</li>
-        <li>它把差异和来历摆给你看,<b>决定权在你</b>:第三方技能引入、开启前请自行阅读内容。</li>
-        <li>实现层防护:写 API 后端强制校验(loopback + 同源 + CSRF 令牌);管理器发起的 git 一律禁用 hook。</li>
-      </ul>
-    </div>
-  </section>
+/* ---------- 渲染入口 ---------- */
+function render(){
+  if(!S)return;
+  renderNav();
+  $("#page").innerHTML={skills:pageSkills,sets:pageSets,usage:pageUsage,insights:pageInsights,
+                        sources:pageSources,settings:pageSettings}[TAB]();
+  // 语言切换按钮:注入到每个页面顶部 pagehead 右侧
+  let acts=document.querySelector(".pagehead .acts");
+  if(!acts){const ph=document.querySelector(".pagehead");if(ph){acts=document.createElement("span");acts.className="acts";ph.appendChild(acts)}}
+  if(acts&&!acts.querySelector(".lang-toggle")){
+    const b=document.createElement("button");b.className="ghost lang-toggle";
+    b.style.cssText="font-size:12px;padding:4px 12px;font-weight:600";
+    b.textContent=t('lang_switch');b.onclick=toggleLang;
+    acts.appendChild(b);
+  }
+  applyI18n();
+  if(TAB==="insights")animateKpis();
+}
 
-  <footer>
-    <a href="https://github.com/Liang-HZ/skills-hub">GitHub</a>·
-    <a href="https://github.com/Liang-HZ/skills-hub/blob/main/README.zh-CN.md">中文文档</a>·
-    <a href="https://liangai.org">liangai.org</a>
-    <div style="margin-top:8px">MIT License · © 2026 Liang-HZ</div>
-  </footer>
-</div>
+/* ---------- 交互 ---------- */
+async function toggle(target,skill,on){await post("/api/toggle",{target,skill,on})}
+const ask=$("#ask");
+function askDialog(title,hint,bodyHtml,onOk){
+  $("#askTitle").textContent=title;$("#askHint").textContent=hint;
+  $("#askBody").innerHTML=bodyHtml;$("#askOk").onclick=async()=>{await onOk();ask.close()};
+  ask.showModal();
+}
+function newSkill(){askDialog(t('m_new_skill_t'),t('m_new_skill_h'),
+  `<input type="text" id="askIn" style="width:100%" placeholder="my-skill">`,
+  async()=>{const n=$("#askIn").value.trim();if(!n)return;
+    const j=await post("/api/new",{name:n});if(j.ok)editSkill(n)})}
+function checkRow(f,extra){
+  const bad=f.conflict?t('m_row_conflict'):!f.valid?t('m_row_invalid'):"";
+  const adopt=f.willAdopt?`<span class="tag" title="${t('m_row_adopt_hint')}">${t('m_row_adopt')}</span>`:"";
+  return `<label class="srcskill" style="cursor:${bad?"default":"pointer"}">
+    <input type="checkbox" data-p="${esc(f.path)}" ${bad?"disabled":"checked"}>
+    <b>${esc(f.name)}</b><span class="hint" style="flex:1">${esc(extra||"")}</span>
+    ${adopt}${bad?`<span class="tag miss">${bad}</span>`:""}</label>`;
+}
+function checkedPaths(sel){return [...document.querySelectorAll(sel+' input:checked')].map(x=>x.dataset.p)}
+const GLOBAL_SKILL_DIRS=["~/.claude/skills","~/.codex/skills","~/.agents/skills"];
+function scanRangeTitle(){
+  let lines=[t('t_scan_range'),...GLOBAL_SKILL_DIRS];
+  if(S.projects&&S.projects.length){
+    lines.push(t('t_scan_range_proj'));
+    lines=lines.concat(S.projects.map(p=>`${p}/.{claude,codex,agents}/skills`));
+  }
+  return lines.join("\n");
+}
+function projRangeHint(){
+  return S.projects&&S.projects.length?S.projects.join("、"):t('dd_scan_project_empty');
+}
+async function scanLocal(scope){
+  if(scope==="project"&&(!S.projects||!S.projects.length)){toast(t('dd_scan_project_empty'));return}
+  toast(t('m_scan_toast'));
+  const r=await post("/api/scan",{scope});
+  const list=r.found||[];
+  if(!list.length){toast(t('m_scan_none'));return}
+  askDialog(tf('m_scan_t',{COUNT:list.length}),t('m_scan_h'),
+    list.map(f=>checkRow(f,placeLabel(f.target))).join(""),
+    async()=>{const ps=checkedPaths("#askBody");if(ps.length)await post("/api/adopt-bulk",{paths:ps})});
+}
+function importDialog(){
+  askDialog(t('m_import_t'),t('m_import_h'),
+   `<div class="row"><input type="text" id="impPath" style="flex:1;min-width:0" placeholder="${t('m_imp_ph')}">
+    <button onclick="pickImportDir()">${t('btn_browse')}</button>
+    <button onclick="impProbe()">${t('m_import_find')}</button></div><div id="impList" style="margin-top:8px"></div>`,
+   async()=>{const ps=checkedPaths("#impList");if(ps.length)await post("/api/import",{paths:ps})});
+}
+async function browseInto(sel){
+  const el=$(sel);
+  const r=await post("/api/pick-dir",{start:el.value.trim()});
+  if(!r.ok){if(r.out)toast(r.out);return null}
+  if(!r.path)return null;  // 用户取消
+  el.value=r.path;
+  return r.path;
+}
+async function pickImportDir(){
+  if(await browseInto("#impPath"))await impProbe();
+}
+async function impProbe(){
+  const p=$("#impPath").value.trim();if(!p)return;
+  const r=await post("/api/import",{path:p,probe:true});
+  if(!r.ok)return;
+  $("#impList").innerHTML=(r.found||[]).map(f=>checkRow(f,f.desc)).join("")
+    ||`<div class="empty">${t('m_import_empty')}</div>`;
+}
+function addProject(skill){
+  const opts=S.projects.map(p=>`<option value="${esc(p)}">`).join("");
+  askDialog(tf('m_addproj_t',{SKILL:skill}),t('m_addproj_h'),
+  `<div class="row"><input type="text" id="askIn" list="projList" style="flex:1;min-width:0" placeholder="${t('m_addproj_ph')}">
+   <button onclick="browseInto('#askIn')">${t('btn_browse')}</button></div>
+   <datalist id="projList">${opts}</datalist>
+   <div class="row" style="margin-top:10px">
+     <label class="hint"><input type="radio" name="pkind" value="claude" checked> ${t('radio_claude')}</label>
+     <label class="hint"><input type="radio" name="pkind" value="codex"> ${t('radio_codex')}</label>
+     <label class="hint"><input type="radio" name="pkind" value="agents"> ${t('radio_agents')}</label>
+   </div>`,
+  async()=>{const p=$("#askIn").value.trim();if(!p)return;
+    const kind=document.querySelector('input[name=pkind]:checked').value;
+    await toggle(p+"::"+kind,skill,true)})}
+function pickSkill(target,label){
+  const here=S.skills.filter(k=>{
+    const st=["claude","codex","agents"].includes(target)?k.places[target]:(k.places.projects[target]||"absent");
+    return st==="absent"});
+  askDialog(tf('m_pick_t',{LABEL:label}),t('m_pick_h'),
+    here.map(k=>`<div class="srcskill"><b>${k.name}</b><span class="hint" style="flex:1">${esc(k.desc).slice(0,60)}</span>
+      <button class="ghost" onclick="toggle('${esc(target)}','${k.name}',true).then(()=>ask.close())">${t('m_pick_open')}</button></div>`).join("")
+    ||`<div class="empty">${t('m_pick_empty')}</div>`,
+    async()=>{});
+  $("#askOk").style.display="none";
+  ask.addEventListener("close",()=>{$("#askOk").style.display=""},{once:true});
+}
+function applySet(name,on){
+  const opts=S.projects.map(p=>`<option value="${esc(p)}">`).join("");
+  askDialog(tf('m_apply_t',{ACT:on?t('btn_apply'):t('btn_close'),NAME:name}),t('m_apply_h'),
+  `<div class="hint" style="margin-bottom:4px">${t('m_apply_sel')}</div>
+   <select id="askSel" style="width:100%">
+    <option value="claude">${t('pill_claude')}</option><option value="codex">${t('pill_codex')}</option>
+    ${S.agents_root?`<option value="agents">${t('pill_agents')}</option>`:""}
+    ${S.proj_targets.map(t2=>`<option value="${esc(t2.target)}">${t('m_proj_label')}:${esc(t2.path)}(.${t2.kind})</option>`).join("")}</select>
+   <div class="hint" style="margin:12px 0 4px">${t('m_apply_custom')}</div>
+   <input type="text" id="askProj" list="projList2" style="width:100%" placeholder="${t('m_addproj_ph')}">
+   <datalist id="projList2">${opts}</datalist>
+   <div class="row" style="margin-top:10px">
+     <label class="hint"><input type="radio" name="pkind" value="claude" checked> ${t('radio_claude')}</label>
+     <label class="hint"><input type="radio" name="pkind" value="codex"> ${t('radio_codex')}</label>
+     <label class="hint"><input type="radio" name="pkind" value="agents"> ${t('radio_agents')}</label>
+   </div>`,
+  async()=>{
+    const p=$("#askProj").value.trim();
+    let target;
+    if(p){
+      const kind=document.querySelector('input[name=pkind]:checked').value;
+      target=p+"::"+kind;
+    }else{
+      target=$("#askSel").value;
+    }
+    await post("/api/set-apply",{set:name,target,on})})}
+async function delSkill(n){
+  if(confirm(tf('m_del_skill',{NAME:n})))
+    await post("/api/delete",{name:n})}
+async function removeSource(n){
+  const src=S.sources.find(s=>s.name===n);
+  const refs=(src&&src.skills||[]).filter(k=>k.imported_type==="ref");
+  if(refs.length){
+    const el=$("#chk-"+n);
+    if(el) el.innerHTML=`<div class="warnbox" style="margin-top:8px">
+      ${tf('m_remove_blocked',{COUNT:refs.length})}
+      ${refs.map(k=>`<div class="row" style="margin:4px 0"><b>${esc(k.imported_as)}</b>
+        <button class="ghost" style="font-size:11px;padding:1px 8px" onclick="post('/api/source/fork',{name:'${esc(k.imported_as)}'}).then(()=>removeSource('${esc(n)}'))">${t('m_remove_fork')}</button>
+        <span class="hint" style="font-size:11px">${t('m_remove_fork_hint')}</span></div>`).join("")}
+      <div class="hint" style="margin-top:4px">${t('m_remove_hint')}</div></div>`;
+    toast(t('m_remove_toast'));
+    return;
+  }
+  if(confirm(tf('m_remove_src_c',{NAME:n})))
+    await post("/api/source/remove",{source:n})}
+async function importSkill(source,subpath,mode){await post("/api/source/import",{source,subpath,mode})}
+async function addSource(){const u=$("#srcUrl").value.trim();if(!u)return;
+  const b=$("#srcAddBtn");b.disabled=true;b.textContent=t('m_dl_ing');
+  try{await post("/api/source/add",{url:u})}finally{b.disabled=false;b.textContent=t('btn_download')}}
+async function checkSource(name){
+  const body=$("#srcChkBody");
+  $("#srcChkTitle").textContent=tf('m_chk_remote_t',{NAME:name});
+  body.innerHTML=`<div class="hint"><span class="spin"></span> ${t('m_chk_ing')}</div>`;
+  srcCheck.showModal();
+  const r=await api("/api/source/check",{source:name});
+  if(!r.ok){body.innerHTML='<div class="warnbox">'+esc(r.out||t('m_chk_fail'))+'</div>';return}
+  if(r.note){body.innerHTML='<div class="hint">'+esc(r.note)+'</div>';return}
+  if(!r.behind){body.innerHTML=`<div class="hint">${t('m_chk_latest')}</div>`;return}
+  body.innerHTML=`<div class="pendbox"><b>${tf('m_chk_behind',{COUNT:r.behind,VER:esc(r.target)})}</b>
+    ${tf('m_chk_affect',{COUNT:r.affected.length,NAMES:r.affected.map(a=>a.skill).join("、")||"—"})}
+    ${r.affected.length?`<pre>${esc(r.affected.map(a=>a.skill+":\n  "+a.files.join("\n  ")).join("\n"))}</pre>`:""}
+    <pre>${esc(r.commits)}</pre>
+    <div class="row" style="margin-top:8px">
+      <button class="primary" onclick="updateSource('${name}','${esc(r.token)}')">${t('m_chk_update_btn')}</button>
+    </div></div>`;
+}
+async function updateSource(name,token){
+  const body=$("#srcChkBody");
+  body.innerHTML=`<div class="hint"><span class="spin"></span> ${t('m_sync_ing')}</div>`;
+  await post("/api/source/update",{source:name,token});
+  body.innerHTML=`<div class="hint">${t('m_sync_done')}</div>`;
+}
+const editor=$("#editor");
+async function showDiff(name,target){
+  const d=$("#diffBody");
+  $("#diffTitle").textContent=tf('m_diff_title',{NAME:name});
+  d.innerHTML=`<span class="spin"></span> ${t('m_diff_ing')}`;
+  $("#diff").showModal();
+  const j=await api("/api/diff",{name,target});
+  if(!j.ok){d.innerHTML='<div class="warnbox">'+esc(j.out||t('m_diff_fail'))+'</div>';return}
+  const colored=esc(j.diff).split("\n").map(l=>{
+    if(l.startsWith("---")||l.startsWith("+++")||l.startsWith("@@"))return '<span class="df-h">'+l+'</span>';
+    if(l.startsWith("-"))return '<span class="df-del">'+l+'</span>';
+    if(l.startsWith("+"))return '<span class="df-add">'+l+'</span>';
+    return l;
+  }).join("\n");
+  d.innerHTML=colored||t('m_diff_none');
+  $("#diffRelink").onclick=()=>{diff.close();relink(name,target)};
+}
+async function relink(name,target){
+  if(!confirm(tf('m_relink_c',{NAME:name,WHERE:placeLabel(target)})))
+    return;
+  await post("/api/relink",{name,target});
+}
+async function editSkill(name){
+  const j=await (await fetch("/api/skill?name="+encodeURIComponent(name)+"&lang="+LANG)).json();
+  if(!j.ok){toast(j.out);return}
+  ED={type:"skill",name};
+  $("#edTitle").textContent=j.readonly?tf('m_ed_ref',{NAME:name}):tf('m_ed_edit',{NAME:name});
+  $("#edHint").textContent=j.readonly?t('m_ed_hint_ref'):t('m_ed_hint_own');
+  $("#edSave").style.display=j.readonly?"none":"";
+  $("#edOpen").style.display="";
+  $("#edBody").value=j.content;editor.showModal();
+}
+function editSet(name){openSetEditor(name,S.sets[name]||[])}
+function newSet(){openSetEditor(null,[])}
+function openSetEditor(name,preset){
+  SE_ORIG=name;
+  $("#seTitle").textContent=name?t('m_se_edit'):t('m_se_new');
+  $("#setName").value=name||"";
+  $("#seCards").innerHTML=setEditorCards(preset);
+  setEditor.showModal();
+}
+function setEditorCards(preset){
+  const pre=new Set(preset);
+  if(!S.skills.length)return `<div class="empty" style="grid-column:1/-1">${t('m_se_empty')}</div>`;
+  return S.skills.map(k=>{
+    const on=pre.has(k.name);
+    return `<label class="skcard sel ${on?"on":""}" data-n="${esc(k.name)}">
+      <div class="se-head">
+        <input type="checkbox" ${on?"checked":""}>
+        <span class="sk-name" title="${esc(k.name)}">${esc(k.name)}</span>
+      </div>
+      <div class="sk-desc" title="${esc(k.desc||"")}">${esc(k.desc)||`<i>${t('m_no_desc_i')}</i>`}</div>
+    </label>`}).join("");
+}
+async function saveSetEditor(){
+  const name=$("#setName").value.trim();
+  if(!/^[a-z0-9][a-z0-9._-]*$/.test(name)){toast(t('m_se_name_err'));return}
+  if(name!==SE_ORIG && S.sets[name]){toast(tf('m_se_dup',{NAME:name}));return}
+  const picked=[...document.querySelectorAll("#seCards .skcard.on")].map(e=>e.dataset.n);
+  await post("/api/set",{name,content:picked.join("\n")+(picked.length?"\n":"")});
+  setEditor.close();
+}
+// 卡片整行点击切换勾选(复选框本身的事件会冒泡,这里防双触发)
+document.addEventListener("change",e=>{
+  const card=e.target.closest("#seCards .skcard.sel");
+  if(!card)return;
+  card.classList.toggle("on",e.target.checked);
+});
+document.addEventListener("click",e=>{
+  const card=e.target.closest("#seCards .skcard.sel");
+  if(!card||e.target.tagName==="INPUT")return;   // 点复选框交给 change 处理
+  const cb=card.querySelector('input[type=checkbox]');
+  cb.checked=!cb.checked;
+  card.classList.toggle("on",cb.checked);
+});
+async function saveEditor(){await post("/api/skill",{name:ED.name,content:$("#edBody").value});editor.close()}
+// 点下拉外面收起(<details> 默认不会自己收)
+document.addEventListener("click",e=>{
+  document.querySelectorAll("details.dropdown[open]").forEach(d=>{
+    if(!d.contains(e.target))d.open=false;
+  });
+});
 
-</body>
-</html>
+load();
+loadUsage();
+</script>
+<script id="demo-ui">
+(function(){
+  const Z = {
+    demo_tag:"在线模拟", demo_what:"这是什么?", demo_install:"装到本地",
+    demo_note:"这是模拟板:数据是编的,一切都跑在你的浏览器里,碰不到你的电脑。",
+    demo_i_title:"你在看一个模拟板",
+    demo_i_lede:"这是 Skills Hub 管理台的真实界面,只不过后端换成了浏览器内存里的假数据。随便点,坏不了。",
+    demo_i_1h:"拨一个开关",
+    demo_i_1d:"技能卡片上那排按钮。绿的 = 那个位置能用这个技能。真实版里,这一下就是建/删一条软链接。",
+    demo_i_2h:"打开「用量分析」",
+    demo_i_2d:"这是本工具真正独有的地方:每个技能被实际触发了多少次。注意「从未触发」那一格——装了但从没用过的技能。",
+    demo_i_3h:"试试「组合」",
+    demo_i_3d:"把常一起用的技能存成一组,一键开关整组。",
+    demo_i_note:"数字是编出来的样例数据。真实版里,这些触发次数是从 Claude Code / Codex / OpenCode 各自的本地会话记录里数出来的——只读、不上传、不出你的机器。",
+    demo_i_close:"开始点",
+    demo_n_title:"装到本地(真正能用的版本)",
+    demo_n_lede:"模拟板只能看。要真的管理你机器上的技能,把它跑起来——只要 Python 3.9+ 和 Git,不装任何依赖。",
+    demo_n_win:"Windows 双击 start-windows.bat 也行。想要个原生窗口:pip install pywebview && python3 desktop.py。",
+    demo_n_close:"关闭",
+    // 侧栏底部原本报的是"本机后台服务在不在跑" —— 模拟板里没有任何服务,不能这么说
+    autostart_on:"模拟板 · 跑在浏览器里", autostart_off:"模拟板 · 跑在浏览器里",
+  };
+  const E = {
+    demo_tag:"live demo", demo_what:"What is this?", demo_install:"Install locally",
+    demo_note:"A simulation: the data is made up, everything runs in your browser, nothing touches your machine.",
+    demo_i_title:"You're looking at a simulation",
+    demo_i_lede:"This is the real Skills Hub UI with its backend swapped for made-up data in your browser's memory. Click anything — you can't break it.",
+    demo_i_1h:"Flip a toggle",
+    demo_i_1d:"The row of buttons on each skill card. Green = the skill is available there. In the real thing, that click creates or removes a symlink.",
+    demo_i_2h:"Open Insights",
+    demo_i_2d:"This is the part no other skill manager has: how often each skill actually fired. Look at the \"never triggered\" tile — skills you installed and never used.",
+    demo_i_3h:"Try Sets",
+    demo_i_3d:"Group the skills you always use together, then flip the whole group with one click.",
+    demo_i_note:"These numbers are sample data. In the real thing they're counted from Claude Code's, Codex's and OpenCode's own local session logs — read-only, never uploaded, never leaving your machine.",
+    demo_i_close:"Start clicking",
+    demo_n_title:"Install locally (the version that actually works)",
+    demo_n_lede:"The demo is look-only. To really manage the skills on your machine, run it — Python 3.9+ and Git, no dependencies to install.",
+    demo_n_win:"On Windows you can double-click start-windows.bat instead. Want a native window? pip install pywebview && python3 desktop.py.",
+    demo_n_close:"Close",
+    autostart_on:"Demo · runs in your browser", autostart_off:"Demo · runs in your browser",
+  };
+  // 挂进 app 自己的 i18n 表:这样右上角切语言时,引导条和弹窗跟着一起切
+  Object.assign(I18N.zh, Z);
+  Object.assign(I18N.en, E);
+  applyI18n();
+
+  const realToggle = window.toggleLang;
+  window.toggleLang = function(){ realToggle(); applyI18n(); };
+
+  // 头一次来的人,先解释这是什么;之后不再打扰
+  try{
+    if(!localStorage.getItem("demo_seen")){
+      demoIntro.showModal();
+      localStorage.setItem("demo_seen", "1");
+    }
+  }catch(e){ demoIntro.showModal(); }
+
+  // 点到"需要本地才能做"的功能时,顺势把安装弹窗推到眼前
+  let nudged = false;
+  window.demoNudge = function(){
+    if(nudged) return;
+    nudged = true;
+    setTimeout(() => demoInstall.showModal(), 900);
+  };
+})();
+</script>
+</body></html>

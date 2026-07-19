@@ -131,7 +131,9 @@ SHIM = r"""
   const NEEDS_LOCAL = ["/api/open", "/api/pick-dir", "/api/scan", "/api/import", "/api/adopt",
                        "/api/adopt-bulk", "/api/relink", "/api/diff", "/api/targets/clean",
                        "/api/source/add", "/api/source/import", "/api/source/fork",
-                       "/api/source/remove", "/api/source/check", "/api/source/update"];
+                       "/api/source/remove", "/api/source/check", "/api/source/update",
+                       "/api/update-check", "/api/update-apply",
+                       "/api/sync-bind", "/api/sync-now", "/api/profile-restore"];
 
   const realFetch = window.fetch.bind(window);
   window.fetch = function(input, opts){
@@ -146,6 +148,7 @@ SHIM = r"""
     if(method === "GET"){
       if(path === "/api/state") return Promise.resolve(J(state));
       if(path === "/api/usage") return Promise.resolve(J({ok:true, skills:usage}));
+      if(path === "/api/lint") return Promise.resolve(J({ok:true, issues:DATA.lint||[]}));
       if(path === "/api/skill"){
         const n = q.get("name");
         return Promise.resolve(J(n in bodies

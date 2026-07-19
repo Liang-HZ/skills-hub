@@ -11,6 +11,8 @@ Skills Hub keeps every AI agent skill on your machine in one local library — a
 Every skill (a folder with a `SKILL.md`) has a single source of truth in a local `library/`, linked into wherever your agents look for skills — Claude Code (`~/.claude/skills`), Codex (`~/.codex/skills`), generic Agents (`~/.agents/skills`), or any project directory. Edit once, effective everywhere; flip a toggle off and the skill stays safe in the library.
 
 - **Real trigger counts, not guesses** — per-skill usage across today / 7d / 30d / all time, split by agent, read straight from each agent's own local logs. The skills you never actually use sort themselves to the bottom.
+- **Health suggestions** — zombie skills (enabled everywhere, firing nowhere), promote-to-global candidates, and a context-tax estimate of what those always-injected skill descriptions cost you per session.
+- **Private backup & multi-machine sync** — your hub is a git repo with every change auto-committed; bind your own private repo and one click pulls the other machine's changes and pushes yours.
 - **One library, every agent** — Claude Code, Codex, OpenCode, or anything else that reads a skills directory. Globally or per project.
 - **Single-file, no npm/pip install** — Python 3.9+ and Git are the only requirements. One file, one command.
 - **Local-first** — a loopback-only HTTP server (`127.0.0.1:7799`). Nothing is uploaded; every data source is read-only.
@@ -25,7 +27,7 @@ cd skills-hub
 python3 webui.py          # opens http://127.0.0.1:7799
 ```
 
-Windows: double-click `start-windows.bat` (or `py webui.py`).
+Windows: double-click `start-windows.bat` (or `py webui.py`) — it probes `py`/`python` for you, and offers optional login autostart (revocable anytime with `py webui.py --uninstall-autostart`).
 Optional native desktop window: `pip install pywebview && python3 desktop.py`.
 
 The UI needs three sentences to understand:
@@ -38,12 +40,12 @@ The UI needs three sentences to understand:
 
 | Tab | What you do there |
 |-----|-------------------|
-| Skills | Create, edit, import, adopt stray skills found on your machine (native directory picker or type a path); toggle where each one is enabled |
+| Skills | Create, edit, import, adopt stray skills found on your machine (native directory picker or type a path); toggle where each one is enabled; run an integrity check (missing frontmatter, dead links, unrecorded local edits — structural facts only) |
 | Sets | Group skills you always use together; enable/disable a whole set in one click |
 | Usage | See what's enabled where (global roots and every project), clean up dead projects |
-| Insights | Rank skills by references and by how often they were actually triggered, over today / 7d / 30d / all time |
+| Insights | Rank skills by references and by how often they were actually triggered, over today / 7d / 30d / all time; health suggestions call out zombie skills, promote-to-global candidates, and your context tax |
 | Sources | Clone third-party skill repos into an isolated `vendor/` area, cherry-pick skills as snapshots, and update them manually |
-| Settings | Behavior options |
+| Settings | Behavior options; tag-versioned software updates; private-repo backup & multi-machine sync |
 
 ### Usage stats: where the numbers come from
 
@@ -54,9 +56,9 @@ Two independent measures, both computed locally — nothing is uploaded, and eve
 
 | Agent | Source | Signal |
 |-------|--------|--------|
-| Claude Code | `~/.claude/projects/**/*.jsonl` | Exact — a structured `Skill` tool call per invocation |
-| OpenCode | `~/.local/share/opencode/opencode.db` | Exact — the built-in `skill` tool call |
-| Codex | `~/.codex/sessions/**/*.jsonl` | **Heuristic** — Codex has no dedicated skill tool, so this counts commands that reference a `.../<name>/SKILL.md` path. Rougher than the others (reading a skill and acting on it look the same) |
+| Claude Code | `~/.claude/projects/**/*.jsonl` (CLI and desktop app share this store) | Exact — a structured `Skill` tool call per invocation, deduplicated by call id so resumed/forked sessions never double-count |
+| OpenCode | `opencode.db` (XDG path, `$XDG_DATA_HOME` → `~/.local/share/opencode`) | Exact — the built-in `skill` tool call |
+| Codex | `~/.codex/sessions/**/*.jsonl` (CLI and the Codex App share this store) | **Same definition as the Codex App's "runs"** — turns whose commands read the skill's `SKILL.md` or ran its `scripts/`, counted once per turn. Measured 93–100% agreement with the App on real data; we scan all history while the App only counts since the feature shipped (2026-05), so older skills show more here |
 | Cursor | — | Not supported yet: its local store is an unofficial, reverse-engineered `state.vscdb` format that could break silently on upgrade |
 
 Scanning is incremental (byte offsets for log files, a rowid high-water mark for OpenCode), so nothing is double-counted and a half-written record is never parsed. The first run walks your existing history and may take a few seconds; after that it's instant.
@@ -69,6 +71,12 @@ Third-party repos are cloned into `vendor/<source>/` — an inert inbox that is 
 2. **Update** — consumes the token and fast-forwards to exactly the commit you reviewed. It cannot re-resolve "latest" behind your back.
 
 All git commands the manager runs use an isolated empty `core.hooksPath`, so no repository or global git hook can turn a management action into code execution.
+
+### Updating the app · syncing between machines
+
+- **Software update** (Settings): the installed release shows as a git tag (`vX.Y.Z`). "Check for Updates" fetches only when clicked; applying is non-destructive — refused while you have uncommitted changes, and merge conflicts roll back automatically, touching nothing. Your skill edits and app updates never fight: your commits live in `library/`, releases only touch code.
+- **Backup · multi-machine sync** (Settings): bind your own **private** repo, then "Sync Now" pulls the other machine's commits and pushes yours — one library, one history, nothing extra to maintain. Toggle states are snapshotted into the repo on every sync and restored on the other machine with one click. Sync only ever pushes to your private remote; the public repo is fetch-only (there is no code path that pushes to it, and regression tests pin that).
+- On the other computer, `git clone <your private repo>` **is** the full install — the app and all your skills come with it.
 
 ### What it deliberately does NOT do
 

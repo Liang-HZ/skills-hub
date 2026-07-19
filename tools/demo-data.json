@@ -16,8 +16,26 @@
       "/Users/you/work/mobile-client::claude": "absent"
      }
     },
-    "created": 1784035986.7205198,
-    "updated": 1784035986.720586
+    "created": 1784469208.8075423,
+    "updated": 1784469208.8076122
+   },
+   {
+    "name": "branch-namer",
+    "desc": "Generate branch names from task descriptions per team convention. Use before cutting a branch.",
+    "origin": null,
+    "places": {
+     "claude": "absent",
+     "codex": "absent",
+     "agents": "absent",
+     "projects": {
+      "/Users/you/work/payments-api::claude": "absent",
+      "/Users/you/work/web-app::claude": "hub-link",
+      "/Users/you/work/data-pipeline::claude": "hub-link",
+      "/Users/you/work/mobile-client::claude": "absent"
+     }
+    },
+    "created": 1784469208.8081048,
+    "updated": 1784469208.8081772
    },
    {
     "name": "changelog",
@@ -34,8 +52,8 @@
       "/Users/you/work/mobile-client::claude": "absent"
      }
     },
-    "created": 1784035986.7204006,
-    "updated": 1784035986.7204804
+    "created": 1784469208.8074234,
+    "updated": 1784469208.807513
    },
    {
     "name": "code-review",
@@ -52,8 +70,8 @@
       "/Users/you/work/mobile-client::claude": "hub-link"
      }
     },
-    "created": 1784035986.7196653,
-    "updated": 1784035986.719812
+    "created": 1784469208.8067293,
+    "updated": 1784469208.8068385
    },
    {
     "name": "commit-helper",
@@ -70,8 +88,8 @@
       "/Users/you/work/mobile-client::claude": "hub-link"
      }
     },
-    "created": 1784035986.7199838,
-    "updated": 1784035986.7200544
+    "created": 1784469208.806987,
+    "updated": 1784469208.807057
    },
    {
     "name": "dataviz",
@@ -95,8 +113,8 @@
       "/Users/you/work/mobile-client::claude": "hub-link"
      }
     },
-    "created": 1784035986.7201912,
-    "updated": 1784035986.7202659
+    "created": 1784469208.8072112,
+    "updated": 1784469208.8072886
    },
    {
     "name": "meeting-notes",
@@ -113,8 +131,8 @@
       "/Users/you/work/mobile-client::claude": "absent"
      }
     },
-    "created": 1784035986.7208216,
-    "updated": 1784035986.720885
+    "created": 1784469208.8078914,
+    "updated": 1784469209.0040324
    },
    {
     "name": "pdf-extract",
@@ -138,8 +156,8 @@
       "/Users/you/work/mobile-client::claude": "hub-link"
      }
     },
-    "created": 1784035986.7200847,
-    "updated": 1784035986.7201517
+    "created": 1784469208.8070912,
+    "updated": 1784469208.8071706
    },
    {
     "name": "regex-helper",
@@ -156,8 +174,8 @@
       "/Users/you/work/mobile-client::claude": "absent"
      }
     },
-    "created": 1784035986.7209156,
-    "updated": 1784035986.7209907
+    "created": 1784469208.8079982,
+    "updated": 1784469208.816061
    },
    {
     "name": "security-audit",
@@ -174,8 +192,8 @@
       "/Users/you/work/mobile-client::claude": "absent"
      }
     },
-    "created": 1784035986.7206206,
-    "updated": 1784035986.7206876
+    "created": 1784469208.807641,
+    "updated": 1784469208.807713
    },
    {
     "name": "slide-deck",
@@ -199,8 +217,8 @@
       "/Users/you/work/mobile-client::claude": "absent"
      }
     },
-    "created": 1784035986.7207203,
-    "updated": 1784035986.720792
+    "created": 1784469208.8077495,
+    "updated": 1784469208.8078575
    },
    {
     "name": "sql-optimizer",
@@ -217,8 +235,8 @@
       "/Users/you/work/mobile-client::claude": "hub-link"
      }
     },
-    "created": 1784035986.720298,
-    "updated": 1784035986.7203665
+    "created": 1784469208.807328,
+    "updated": 1784469208.807395
    },
    {
     "name": "test-writer",
@@ -235,8 +253,8 @@
       "/Users/you/work/mobile-client::claude": "hub-link"
      }
     },
-    "created": 1784035986.7198691,
-    "updated": 1784035986.7199523
+    "created": 1784469208.8068802,
+    "updated": 1784469208.8069553
    }
   ],
   "projects": [
@@ -296,33 +314,69 @@
   "sources": [],
   "clean_empty_dirs": true,
   "platform": "darwin",
-  "autostart": true
+  "autostart": true,
+  "app_version": {
+   "head": "32843b0 2026-07-19",
+   "branch": "main",
+   "origin": "",
+   "tag": "v0.0.1"
+  },
+  "sync_remote": "",
+  "has_profile_file": false
  },
  "usage": {
   "api-docs": {
    "total": 9,
-   "d7": 9,
-   "d30": 9,
-   "today": 3,
-   "last_day": "2026-07-14",
+   "d7": 0,
+   "d30": 0,
+   "today": 0,
+   "last_day": "2026-06-04",
    "projects": 1,
    "by_agent": {
     "claude": {
      "total": 6,
-     "d7": 6,
-     "d30": 6,
-     "today": 1
+     "d7": 0,
+     "d30": 0,
+     "today": 0
     },
     "codex": {
      "total": 2,
-     "d7": 2,
-     "d30": 2,
-     "today": 1
+     "d7": 0,
+     "d30": 0,
+     "today": 0
     },
     "opencode": {
      "total": 1,
-     "d7": 1,
-     "d30": 1,
+     "d7": 0,
+     "d30": 0,
+     "today": 0
+    }
+   }
+  },
+  "branch-namer": {
+   "total": 41,
+   "d7": 18,
+   "d30": 41,
+   "today": 3,
+   "last_day": "2026-07-19",
+   "projects": 2,
+   "by_agent": {
+    "claude": {
+     "total": 30,
+     "d7": 7,
+     "d30": 30,
+     "today": 1
+    },
+    "codex": {
+     "total": 7,
+     "d7": 7,
+     "d30": 7,
+     "today": 1
+    },
+    "opencode": {
+     "total": 4,
+     "d7": 4,
+     "d30": 4,
      "today": 1
     }
    }
@@ -332,7 +386,7 @@
    "d7": 13,
    "d30": 22,
    "today": 3,
-   "last_day": "2026-07-14",
+   "last_day": "2026-07-19",
    "projects": 2,
    "by_agent": {
     "claude": {
@@ -360,7 +414,7 @@
    "d7": 122,
    "d30": 342,
    "today": 19,
-   "last_day": "2026-07-14",
+   "last_day": "2026-07-19",
    "projects": 8,
    "by_agent": {
     "claude": {
@@ -388,7 +442,7 @@
    "d7": 54,
    "d30": 156,
    "today": 8,
-   "last_day": "2026-07-14",
+   "last_day": "2026-07-19",
    "projects": 11,
    "by_agent": {
     "claude": {
@@ -416,7 +470,7 @@
    "d7": 27,
    "d30": 61,
    "today": 4,
-   "last_day": "2026-07-14",
+   "last_day": "2026-07-19",
    "projects": 4,
    "by_agent": {
     "claude": {
@@ -444,7 +498,7 @@
    "d7": 37,
    "d30": 94,
    "today": 6,
-   "last_day": "2026-07-14",
+   "last_day": "2026-07-19",
    "projects": 3,
    "by_agent": {
     "claude": {
@@ -472,7 +526,7 @@
    "d7": 3,
    "d30": 3,
    "today": 2,
-   "last_day": "2026-07-14",
+   "last_day": "2026-07-19",
    "projects": 1,
    "by_agent": {
     "claude": {
@@ -494,7 +548,7 @@
    "d7": 18,
    "d30": 38,
    "today": 3,
-   "last_day": "2026-07-14",
+   "last_day": "2026-07-19",
    "projects": 2,
    "by_agent": {
     "claude": {
@@ -522,7 +576,7 @@
    "d7": 65,
    "d30": 188,
    "today": 11,
-   "last_day": "2026-07-14",
+   "last_day": "2026-07-19",
    "projects": 5,
    "by_agent": {
     "claude": {
@@ -548,16 +602,29 @@
  },
  "bodies": {
   "api-docs": "---\nname: api-docs\ndescription: Generate OpenAPI docs from route definitions and keep them in sync with code. Use after changing endpoints.\n---\n\n# api-docs\n\n## 何时用 / When to use\n\n- 从路由定义生成 OpenAPI 文档并保持与代码同步。新增/修改接口后使用。\n- Generate OpenAPI docs from route definitions and keep them in sync with code. Use after changing endpoints.\n\n## 步骤 / Steps\n\n1. …\n2. …\n",
+  "branch-namer": "---\nname: branch-namer\ndescription: Generate branch names from task descriptions per team convention. Use before cutting a branch.\n---\n\n# branch-namer\n\n## 何时用 / When to use\n\n- 按团队约定从任务描述生成分支名。开新分支前使用。\n- Generate branch names from task descriptions per team convention. Use before cutting a branch.\n\n## 步骤 / Steps\n\n1. …\n2. …\n",
   "changelog": "---\nname: changelog\ndescription: Generate a user-facing changelog from commits between two tags. Use before cutting a release.\n---\n\n# changelog\n\n## 何时用 / When to use\n\n- 从两个 tag 之间的提交生成面向用户的更新日志。发版前使用。\n- Generate a user-facing changelog from commits between two tags. Use before cutting a release.\n\n## 步骤 / Steps\n\n1. …\n2. …\n",
   "code-review": "---\nname: code-review\ndescription: Review the working diff for correctness bugs and simplification wins, ranked by severity. Use before committing or opening a PR.\n---\n\n# code-review\n\n## 何时用 / When to use\n\n- 审查改动中的正确性缺陷与可简化处,按严重度排序输出。提交前、开 PR 前使用。\n- Review the working diff for correctness bugs and simplification wins, ranked by severity. Use before committing or opening a PR.\n\n## 步骤 / Steps\n\n1. …\n2. …\n",
   "commit-helper": "---\nname: commit-helper\ndescription: Read staged changes and draft a commit message matching the repo's history style. Use before git commit.\n---\n\n# commit-helper\n\n## 何时用 / When to use\n\n- 读暂存区改动,生成符合仓库历史风格的提交信息。git commit 前使用。\n- Read staged changes and draft a commit message matching the repo's history style. Use before git commit.\n\n## 步骤 / Steps\n\n1. …\n2. …\n",
   "dataviz": "---\nname: dataviz\ndescription: Read before charting: color formula, form heuristics, light/dark validator. Use for any chart or dashboard task.\n---\n\n# dataviz\n\n## 何时用 / When to use\n\n- 画图表前先读:配色公式、图形选择启发式、明暗双主题校验器。任何图表/仪表盘任务使用。\n- Read before charting: color formula, form heuristics, light/dark validator. Use for any chart or dashboard task.\n\n## 步骤 / Steps\n\n1. …\n2. …\n",
-  "meeting-notes": "---\nname: meeting-notes\ndescription: Turn meeting transcripts into decisions plus an action list. Use when a transcript is pasted.\n---\n\n# meeting-notes\n\n## 何时用 / When to use\n\n- 把会议记录整理成决议 + 待办清单。用户贴入会议纪要时使用。\n- Turn meeting transcripts into decisions plus an action list. Use when a transcript is pasted.\n\n## 步骤 / Steps\n\n1. …\n2. …\n",
+  "meeting-notes": "---\nname: meeting-notes\ndescription: Turn meeting transcripts into decisions plus an action list. Use when a transcript is pasted.\n---\n\n# meeting-notes\n\n## 何时用 / When to use\n\n- 把会议记录整理成决议 + 待办清单。用户贴入会议纪要时使用。\n- Turn meeting transcripts into decisions plus an action list. Use when a transcript is pasted.\n\n## 步骤 / Steps\n\n1. …\n2. …\n\n<!-- 手动加的一行,没经过管理台 -->\n",
   "pdf-extract": "---\nname: pdf-extract\ndescription: Extract text and tables from PDFs, with OCR for scanned files. Use when a .pdf file is mentioned.\n---\n\n# pdf-extract\n\n## 何时用 / When to use\n\n- 从 PDF 里抽取文字与表格,支持扫描件 OCR。用户提到 .pdf 文件时使用。\n- Extract text and tables from PDFs, with OCR for scanned files. Use when a .pdf file is mentioned.\n\n## 步骤 / Steps\n\n1. …\n2. …\n",
-  "regex-helper": "---\nname: regex-helper\ndescription: Explain gnarly regexes and offer tested alternatives. Use when a regex is hard to read.\n---\n\n# regex-helper\n\n## 何时用 / When to use\n\n- 解释复杂正则并生成带测试样例的替代写法。遇到看不懂的正则时使用。\n- Explain gnarly regexes and offer tested alternatives. Use when a regex is hard to read.\n\n## 步骤 / Steps\n\n1. …\n2. …\n",
+  "regex-helper": "---\nname: regex-helper\ndescription: Explain gnarly regexes and offer tested alternatives. Use when a regex is hard to read.\n---\n\n# regex-helper\n\n## 何时用 / When to use\n\n- 解释复杂正则并生成带测试样例的替代写法。遇到看不懂的正则时使用。\n- Explain gnarly regexes and offer tested alternatives. Use when a regex is hard to read.\n\n## 步骤 / Steps\n\n1. …\n2. …\n\n更多示例见 [示例集](reference/examples.md)。\n",
   "security-audit": "---\nname: security-audit\ndescription: Review changes for injection, authz gaps, and leaked secrets. Use for auth or untrusted-input changes.\n---\n\n# security-audit\n\n## 何时用 / When to use\n\n- 审查改动中的注入、越权、密钥泄露风险。涉及认证或外部输入的改动使用。\n- Review changes for injection, authz gaps, and leaked secrets. Use for auth or untrusted-input changes.\n\n## 步骤 / Steps\n\n1. …\n2. …\n",
   "slide-deck": "---\nname: slide-deck\ndescription: Turn an outline into a .pptx deck using templates and layouts. Use when a deck or slides are requested.\n---\n\n# slide-deck\n\n## 何时用 / When to use\n\n- 把大纲变成 .pptx 演示文稿,套用模板与母版。用户要做 deck/slides 时使用。\n- Turn an outline into a .pptx deck using templates and layouts. Use when a deck or slides are requested.\n\n## 步骤 / Steps\n\n1. …\n2. …\n",
   "sql-optimizer": "---\nname: sql-optimizer\ndescription: Analyze slow-query plans and suggest indexes or rewrites. Use when a query is reported slow.\n---\n\n# sql-optimizer\n\n## 何时用 / When to use\n\n- 分析慢查询执行计划,给出索引与改写建议。用户抱怨查询慢时使用。\n- Analyze slow-query plans and suggest indexes or rewrites. Use when a query is reported slow.\n\n## 步骤 / Steps\n\n1. …\n2. …\n",
   "test-writer": "---\nname: test-writer\ndescription: Write unit tests for changed functions, auto-detecting the framework and existing style. Use after writing new logic.\n---\n\n# test-writer\n\n## 何时用 / When to use\n\n- 为改动的函数补单元测试,自动识别测试框架与既有风格。写完新逻辑后使用。\n- Write unit tests for changed functions, auto-detecting the framework and existing style. Use after writing new logic.\n\n## 步骤 / Steps\n\n1. …\n2. …\n"
- }
+ },
+ "lint": [
+  {
+   "skill": "meeting-notes",
+   "kind": "dirty",
+   "detail": "SKILL.md"
+  },
+  {
+   "skill": "regex-helper",
+   "kind": "dead_link",
+   "detail": "reference/examples.md"
+  }
+ ]
 }

@@ -1508,6 +1508,10 @@ button.ghost:hover{color:var(--accent-ink);border-color:transparent;background:v
 button.danger:hover{border-color:var(--bad);color:var(--bad)}
 button:disabled{opacity:.45;cursor:default;pointer-events:none}
 .sortdir{min-width:34px;padding:7px 8px;font-size:15px;line-height:1;text-align:center;border-color:var(--line)}
+.refreshbtn{padding:6px 8px;line-height:0;display:inline-flex;align-items:center;justify-content:center}
+.refreshbtn svg{width:16px;height:16px}
+.refreshbtn.spin svg{animation:spin .6s linear}
+@keyframes spin{to{transform:rotate(360deg)}}
 /* ---- 拆分按钮(主操作 + 下拉次选项) ---- */
 .splitbtn{display:inline-flex;position:relative}
 .splitbtn>button{border-radius:var(--rs) 0 0 var(--rs);border-right:none}
@@ -1797,6 +1801,7 @@ dd_more:"更多扫描范围",dd_scan_global:"只扫描全局目录",dd_scan_glob
 dd_scan_project:"只扫描项目目录",dd_scan_project_empty:"还没有登记任何项目,先在某个技能卡片上点「＋项目」",
 t_import_hint:"导入目录 = 你指定任意目录(单个技能或一堆技能),复制进库,原目录不动。跟「扫描本机技能」的区别:那个只在固定的几个位置(全局 + 已登记项目)里找,这个你想导哪就导哪。",
 ph_search:"搜技能名或描述…",chip_all:"全部",chip_own:"自建",chip_ext:"网上引入",
+btn_refresh:"刷新",t_refresh_hint:"重新扫描技能库,拿到本地新增/改动的技能(不用刷新整个页面)",toast_refreshed:"已刷新",
 sort_label:"排序",sort_name:"名称",sort_refs:"引用数",sort_uses:"触发次数",sort_created:"创建时间",sort_updated:"更新时间",
 sort_dir_asc:"当前正序,点击切为倒序",sort_dir_desc:"当前倒序,点击切为正序",
 meta_created:"创建",meta_updated:"更新",
@@ -1967,6 +1972,7 @@ dd_more:"More scan scopes",dd_scan_global:"Scan global dirs only",dd_scan_global
 dd_scan_project:"Scan project dirs only",dd_scan_project_empty:"No registered projects yet — click \"+ Project\" on a skill card first",
 t_import_hint:"Import Dir = pick any directory (one skill, or a folder of skills) and copy it into the library, original untouched. Unlike \"Scan Local Skills\", which only looks in fixed locations (global + registered projects), this can import from anywhere.",
 ph_search:"Search name or description…",chip_all:"All",chip_own:"Own",chip_ext:"Imported",
+btn_refresh:"Refresh",t_refresh_hint:"Rescan the library to pick up skills added or changed on disk (no full page reload)",toast_refreshed:"Refreshed",
 sort_label:"Sort",sort_name:"Name",sort_refs:"References",sort_uses:"Triggers",sort_created:"Created",sort_updated:"Updated",
 sort_dir_asc:"Ascending — click for descending",sort_dir_desc:"Descending — click for ascending",
 meta_created:"Created",meta_updated:"Updated",
@@ -2137,6 +2143,10 @@ function typing(){ // 正在页面内的输入框里打字时,刷新不要重渲
 }
 async function load(){S=await (await fetch("/api/state")).json();
   if(typing())renderNav();else render()}
+async function refreshSkills(btn){ // 重新扫库,拿到磁盘上新增/改动的技能,不用整页刷新
+  if(btn){btn.classList.add("spin");btn.disabled=true}
+  try{await load()}finally{toast(t('toast_refreshed'))} // load() 会重渲染,btn 随之消失,spin/disabled 无需手动还原
+}
 
 function show(t){TAB=t;localStorage.setItem("tab",t);if(t==="insights")loadUsage();render()}
 async function loadUsage(){
@@ -2328,7 +2338,8 @@ function pageSkills(){
       value="${esc(window._kw||"")}" oninput="window._kw=this.value;$('#sklist').innerHTML=skillCards()">
     <span class="chips" style="margin:0">${chips.map(([id,l])=>
       `<span class="chip ${FILTER===id?'active':''}" onclick="FILTER='${id}';render()">${l}</span>`).join("")}</span>
-    <label class="hint" style="margin-left:auto;display:flex;align-items:center;gap:6px">${t('sort_label')}
+    <button class="ghost refreshbtn" style="margin-left:auto" title="${esc(t('t_refresh_hint'))}" aria-label="${t('btn_refresh')}" onclick="refreshSkills(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></button>
+    <label class="hint" style="display:flex;align-items:center;gap:6px">${t('sort_label')}
       <select onchange="setSkillSort(this.value)">
         <option value="name" ${SKILL_SORT==='name'?'selected':''}>${t('sort_name')}</option>
         <option value="refs" ${SKILL_SORT==='refs'?'selected':''}>${t('sort_refs')}</option>

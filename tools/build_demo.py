@@ -185,50 +185,50 @@ body{padding-top:var(--dbh)}
   .side{top:var(--dbh) !important;height:calc(100vh - var(--dbh)) !important}
 }
 .demobar{position:fixed;top:0;left:0;right:0;height:var(--dbh);z-index:300;
-  display:flex;align-items:center;gap:14px;padding:0 16px;
+  display:flex;align-items:center;gap:12px;padding:0 16px;
   background:var(--card);border-bottom:1px solid var(--line);
   box-shadow:0 1px 3px rgba(16,24,40,.06)}
 .demobar .db-brand{display:flex;align-items:center;gap:8px;flex:none}
-.demobar .db-logo{width:24px;height:24px;border-radius:7px;background:var(--accent);color:#fff;
-  display:flex;align-items:center;justify-content:center;font-size:13px}
+.demobar .db-logo{width:24px;height:24px;border-radius:8px;background:var(--accent);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:12px}
 .demobar .db-brand b{font-size:14px}
-.demobar .db-tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;
+.demobar .db-tag{font-size:12px;font-weight:500;padding:2px 8px;border-radius:99px;
   background:var(--accent-soft);color:var(--accent-ink);white-space:nowrap}
-.demobar .db-note{font-size:12.5px;color:var(--muted);flex:1;min-width:0;
+.demobar .db-note{font-size:12px;color:var(--muted);flex:1;min-width:0;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .demobar .db-act{display:flex;align-items:center;gap:8px;flex:none}
-.demobar .db-act button,.demobar .db-act a{font:inherit;font-size:12.5px;font-weight:600;
-  padding:6px 13px;border-radius:9px;border:1px solid var(--line);background:var(--card);
+.demobar .db-act button,.demobar .db-act a{font:inherit;font-size:12px;font-weight:500;
+  padding:4px 12px;border-radius:8px;border:1px solid var(--line);background:var(--card);
   color:var(--ink);cursor:pointer;text-decoration:none;white-space:nowrap}
 .demobar .db-act button:hover,.demobar .db-act a:hover{border-color:var(--accent)}
 .demobar .db-act .primary{background:var(--accent);border-color:var(--accent);color:#fff}
 .demobar .db-act .primary:hover{opacity:.92}
 @media(max-width:900px){.demobar .db-note{display:none}}
 @media(max-width:620px){   /* 窄屏放不下全部,留住最关键的两个入口:说明 + 安装 */
-  .demobar{gap:8px;padding:0 10px}
+  .demobar{gap:8px;padding:0 8px}
   .demobar .db-tag,.demobar .db-brand b,.demobar .db-act a{display:none}
-  .demobar .db-act button{padding:6px 10px}
+  .demobar .db-act button{padding:4px 8px}
 }
 #demoIntro,#demoInstall{max-width:min(560px, calc(100vw - 28px))}
 
 #demoIntro::backdrop,#demoInstall::backdrop{background:rgba(16,20,32,.45)}
 #demoIntro,#demoInstall{max-width:560px}
 #demoIntro h2,#demoInstall h2{margin:0 0 4px}
-.demo-lede{color:var(--muted);font-size:13.5px;margin:0 0 16px}
-.demo-try{list-style:none;padding:0;margin:0 0 18px}
-.demo-try li{display:flex;gap:11px;align-items:flex-start;padding:9px 0;
-  border-top:1px solid var(--line);font-size:13.5px}
+.demo-lede{color:var(--muted);font-size:14px;margin:0 0 16px}
+.demo-try{list-style:none;padding:0;margin:0 0 16px}
+.demo-try li{display:flex;gap:12px;align-items:flex-start;padding:8px 0;
+  border-top:1px solid var(--line);font-size:14px}
 .demo-try li:first-child{border-top:none}
 .demo-try .n{width:20px;height:20px;border-radius:50%;background:var(--accent-soft);
-  color:var(--accent-ink);font-size:11px;font-weight:700;flex:none;
+  color:var(--accent-ink);font-size:12px;font-weight:700;flex:none;
   display:flex;align-items:center;justify-content:center;margin-top:2px}
 .demo-try b{display:block}
-.demo-try span.d{color:var(--muted);font-size:12.5px}
+.demo-try span.d{color:var(--muted);font-size:12px}
 .demo-note{background:var(--infobg);color:var(--info);border-radius:var(--rs);
-  padding:10px 13px;font-size:12.5px;margin:0 0 16px}
+  padding:8px 12px;font-size:12px;margin:0 0 16px}
 pre.demo-cmd{background:var(--panel);border:1px solid var(--line);border-radius:var(--rs);
-  padding:13px 15px;font:12.5px/1.85 ui-monospace,Menlo,Consolas,monospace;
-  overflow-x:auto;margin:0 0 14px;color:var(--ink)}
+  padding:12px 16px;font:12.5px/1.85 ui-monospace,Menlo,Consolas,monospace;
+  overflow-x:auto;margin:0 0 12px;color:var(--ink)}
 pre.demo-cmd .c{color:var(--faint)}
 </style>
 """
@@ -274,7 +274,7 @@ python3 webui.py   <span class="c"># 打开 http://127.0.0.1:7799</span></pre>
   <div class="row" style="justify-content:flex-end;gap:8px">
     <button data-i18n="demo_n_close" onclick="demoInstall.close()">关闭</button>
     <a class="primary" href="__REPO__" target="_blank" rel="noopener"
-       style="font:inherit;font-size:13px;font-weight:600;padding:8px 15px;border-radius:9px;
+       style="font:inherit;font-size:12px;font-weight:500;padding:8px 16px;border-radius:8px;
               background:var(--accent);color:#fff;text-decoration:none">GitHub →</a>
   </div>
 </dialog>

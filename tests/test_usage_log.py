@@ -1,4 +1,4 @@
-# usage_log 回归测试:Skill 触发次数的增量扫描与聚合(Claude Code / Codex / OpenCode)
+# usage_log 回归测试:Skill 触发次数的增量扫描与聚合(Claude Code / Codex / OpenCode / zcode / WorkBuddy)
 # 运行:  python3 -m unittest discover -s tests -v
 import http.client
 import json
@@ -20,6 +20,22 @@ os.environ.setdefault("SKILLS_HUB_ROOT", str(TMP / "hub"))
 
 sys.path.insert(0, str(REPO))
 import usage_log  # noqa: E402
+
+
+def setUpModule():
+    """本机真有 ~/.zcode、~/.workbuddy 时,扫描器默认会去读它们——测试一律指向不存在的
+    临时路径,各测试类再按需覆盖。少了这一步,真实机器上的调用会混进 fixture 的断言里。"""
+    usage_log.DEFAULT_ZCODE_DB = TMP / "no-zcode.db"
+    usage_log.DEFAULT_WORKBUDDY_PROJECTS_DIR = TMP / "no-workbuddy"
+
+
+def workbuddy_line(skill, ts=None, cwd="/tmp/wb-proj", call_id=None, session_id="wb-s1", name="Skill"):
+    ts = ts if ts is not None else int(datetime.now(timezone.utc).timestamp() * 1000)
+    rec = {"type": "function_call", "name": name, "timestamp": ts, "cwd": cwd,
+           "sessionId": session_id, "arguments": json.dumps({"skill": skill})}
+    if call_id:
+        rec["callId"] = call_id
+    return json.dumps(rec)
 
 
 def skill_line(skill, ts=None, cwd="/tmp/proj", tool_name="Skill", call_id=None):
@@ -62,6 +78,8 @@ class ClaudeScanTests(unittest.TestCase):
         usage_log.DEFAULT_CLAUDE_PROJECTS_DIR = self.projects_dir
         usage_log.DEFAULT_CODEX_DIRS = [self.work / "no-codex"]
         usage_log.DEFAULT_OPENCODE_DB = self.work / "no-opencode.db"
+        usage_log.DEFAULT_ZCODE_DB = self.work / "no-zcode.db"
+        usage_log.DEFAULT_WORKBUDDY_PROJECTS_DIR = self.work / "no-workbuddy"
         usage_log.DB_PATH = self.work / "usage.sqlite3"
 
     def _write(self, rel_path, text):
@@ -157,6 +175,8 @@ class CodexScanTests(unittest.TestCase):
         self.codex_dir.mkdir()
         usage_log.DEFAULT_CODEX_DIRS = [self.codex_dir]
         usage_log.DEFAULT_OPENCODE_DB = self.work / "no-opencode.db"
+        usage_log.DEFAULT_ZCODE_DB = self.work / "no-zcode.db"
+        usage_log.DEFAULT_WORKBUDDY_PROJECTS_DIR = self.work / "no-workbuddy"
         usage_log.DB_PATH = self.work / "usage.sqlite3"
 
     def _write(self, rel_path, text):
@@ -290,6 +310,8 @@ class OpenCodeScanTests(unittest.TestCase):
         self.work = Path(tempfile.mkdtemp(dir=TMP))
         usage_log.DEFAULT_CLAUDE_PROJECTS_DIR = self.work / "no-claude"
         usage_log.DEFAULT_CODEX_DIRS = [self.work / "no-codex"]
+        usage_log.DEFAULT_ZCODE_DB = self.work / "no-zcode.db"
+        usage_log.DEFAULT_WORKBUDDY_PROJECTS_DIR = self.work / "no-workbuddy"
         self.db_path = self.work / "opencode.db"
         usage_log.DEFAULT_OPENCODE_DB = self.db_path
         usage_log.DB_PATH = self.work / "usage.sqlite3"
@@ -347,6 +369,136 @@ class OpenCodeScanTests(unittest.TestCase):
         self.assertEqual(usage_log.stats(), {})
 
 
+class ZcodeScanTests(unittest.TestCase):
+    """zcode:与 OpenCode 同一套 part 表,工具名是 "Skill"、技能名在 state.input.skill。"""
+
+    def setUp(self):
+        self.work = Path(tempfile.mkdtemp(dir=TMP))
+        usage_log.DEFAULT_CLAUDE_PROJECTS_DIR = self.work / "no-claude"
+        usage_log.DEFAULT_CODEX_DIRS = [self.work / "no-codex"]
+        usage_log.DEFAULT_OPENCODE_DB = self.work / "no-opencode.db"
+        usage_log.DEFAULT_WORKBUDDY_PROJECTS_DIR = self.work / "no-workbuddy"
+        self.db_path = self.work / "zcode.sqlite"
+        usage_log.DEFAULT_ZCODE_DB = self.db_path
+        usage_log.DB_PATH = self.work / "usage.sqlite3"
+        conn = sqlite3.connect(self.db_path)
+        conn.executescript("""
+            CREATE TABLE session (id TEXT PRIMARY KEY, project_id TEXT, directory TEXT);
+            CREATE TABLE part (id TEXT PRIMARY KEY, message_id TEXT, session_id TEXT,
+                                time_created INTEGER, data TEXT);
+        """)
+        conn.execute("INSERT INTO session(id,project_id,directory) VALUES ('s1','p1','/tmp/zc-proj')")
+        conn.commit()
+        conn.close()
+        self._conn = sqlite3.connect(self.db_path)
+
+    def _add_part(self, data_obj, time_created=None):
+        time_created = time_created or int(datetime.now(timezone.utc).timestamp() * 1000)
+        pid = f"part-{time_created}-{os.urandom(4).hex()}"
+        self._conn.execute(
+            "INSERT INTO part(id,message_id,session_id,time_created,data) VALUES (?,?,?,?,?)",
+            (pid, "m1", "s1", time_created, json.dumps(data_obj)))
+        self._conn.commit()
+
+    def _skill_part(self, skill, status="completed"):
+        return {"type": "tool", "callID": "c1", "tool": "Skill",
+                "state": {"status": status, "input": {"skill": skill}}}
+
+    def test_skill_call_counted_under_zcode(self):
+        self._add_part(self._skill_part("zc-skill"))
+        st = usage_log.stats()
+        self.assertEqual(st["zc-skill"]["total"], 1)
+        self.assertEqual(st["zc-skill"]["by_agent"]["zcode"]["total"], 1)
+
+    def test_errored_call_not_counted(self):
+        # "Skill not found: x" —— 技能压根没跑起来,不算一次使用
+        self._add_part(self._skill_part("missing-skill", status="error"))
+        self.assertEqual(usage_log.stats(), {})
+
+    def test_other_tool_ignored(self):
+        self._add_part({"type": "tool", "tool": "Bash", "state": {"input": {"command": "ls"}}})
+        self.assertEqual(usage_log.stats(), {})
+
+    def test_session_directory_is_the_project(self):
+        self._add_part(self._skill_part("zc-proj-skill"))
+        self.assertEqual(usage_log.stats()["zc-proj-skill"]["projects"], 1)
+
+    def test_incremental_scan_does_not_double_count(self):
+        self._add_part(self._skill_part("zc-inc"))
+        self.assertEqual(usage_log.stats()["zc-inc"]["total"], 1)
+        self._add_part(self._skill_part("zc-inc"))
+        self.assertEqual(usage_log.stats()["zc-inc"]["total"], 2)
+
+    def test_missing_db_returns_no_skills(self):
+        usage_log.DEFAULT_ZCODE_DB = self.work / "does-not-exist.sqlite"
+        self.assertEqual(usage_log.stats(), {})
+
+
+class WorkBuddyScanTests(unittest.TestCase):
+    """WorkBuddy:布局同 Claude,每行是 function_call/name=Skill/arguments 是 JSON 字符串。"""
+
+    def setUp(self):
+        self.work = Path(tempfile.mkdtemp(dir=TMP))
+        usage_log.DEFAULT_CLAUDE_PROJECTS_DIR = self.work / "no-claude"
+        usage_log.DEFAULT_CODEX_DIRS = [self.work / "no-codex"]
+        usage_log.DEFAULT_OPENCODE_DB = self.work / "no-opencode.db"
+        usage_log.DEFAULT_ZCODE_DB = self.work / "no-zcode.db"
+        self.projects_dir = self.work / "workbuddy-projects"
+        self.projects_dir.mkdir()
+        usage_log.DEFAULT_WORKBUDDY_PROJECTS_DIR = self.projects_dir
+        usage_log.DB_PATH = self.work / "usage.sqlite3"
+
+    def _write(self, rel_path, text):
+        p = self.projects_dir / rel_path
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(text)
+        return p
+
+    def test_skill_call_counted_under_workbuddy(self):
+        self._write("proj/a.jsonl", workbuddy_line("wb-skill") + "\n")
+        st = usage_log.stats()
+        self.assertEqual(st["wb-skill"]["total"], 1)
+        self.assertEqual(st["wb-skill"]["by_agent"]["workbuddy"]["total"], 1)
+
+    def test_other_tool_ignored(self):
+        self._write("proj/a.jsonl", workbuddy_line("wb-skill", name="Bash") + "\n")
+        self.assertEqual(usage_log.stats(), {})
+
+    def test_same_call_id_in_two_sessions_both_counted(self):
+        # callId 有 "Skill_0" 这种按会话计数的写法,跨会话重名不能当成重复
+        self._write("proj/a.jsonl", workbuddy_line("dup-id", call_id="Skill_0", session_id="s-a") + "\n")
+        self._write("proj/b.jsonl", workbuddy_line("dup-id", call_id="Skill_0", session_id="s-b") + "\n")
+        self.assertEqual(usage_log.stats()["dup-id"]["total"], 2)
+
+    def test_same_call_copied_into_another_file_counted_once(self):
+        line = workbuddy_line("copied", call_id="call_x", session_id="s-a")
+        self._write("proj/a.jsonl", line + "\n")
+        self._write("proj/b.jsonl", line + "\n")
+        self.assertEqual(usage_log.stats()["copied"]["total"], 1)
+
+    def test_incremental_scan_does_not_double_count(self):
+        f = self._write("proj/a.jsonl", workbuddy_line("wb-inc", call_id="c1") + "\n")
+        self.assertEqual(usage_log.stats()["wb-inc"]["total"], 1)
+        f.write_text(f.read_text() + workbuddy_line("wb-inc", call_id="c2") + "\n")
+        self.assertEqual(usage_log.stats()["wb-inc"]["total"], 2)
+
+    def test_incomplete_trailing_line_waits_for_next_scan(self):
+        f = self._write("proj/a.jsonl", workbuddy_line("wb-partial", call_id="c1")[:40])
+        self.assertEqual(usage_log.stats(), {})
+        f.write_text(workbuddy_line("wb-partial", call_id="c1") + "\n")
+        self.assertEqual(usage_log.stats()["wb-partial"]["total"], 1)
+
+    def test_cwd_is_the_project(self):
+        self._write("proj/a.jsonl",
+                    workbuddy_line("wb-multi", cwd="/tmp/p1", call_id="c1") + "\n" +
+                    workbuddy_line("wb-multi", cwd="/tmp/p2", call_id="c2") + "\n")
+        self.assertEqual(usage_log.stats()["wb-multi"]["projects"], 2)
+
+    def test_missing_dir_returns_no_skills(self):
+        usage_log.DEFAULT_WORKBUDDY_PROJECTS_DIR = self.work / "does-not-exist"
+        self.assertEqual(usage_log.stats(), {})
+
+
 class CrossAgentAggregationTests(unittest.TestCase):
     """同一个技能被不同 agent 触发,total 应该加总,by_agent 应该分开。"""
 
@@ -357,24 +509,34 @@ class CrossAgentAggregationTests(unittest.TestCase):
         self.codex_dir = self.work / "codex-sessions"
         self.codex_dir.mkdir()
         self.oc_db = self.work / "opencode.db"
+        self.zc_db = self.work / "zcode.sqlite"
+        self.wb_dir = self.work / "workbuddy-projects"
+        self.wb_dir.mkdir()
         usage_log.DEFAULT_CLAUDE_PROJECTS_DIR = self.claude_dir
         usage_log.DEFAULT_CODEX_DIRS = [self.codex_dir]
         usage_log.DEFAULT_OPENCODE_DB = self.oc_db
+        usage_log.DEFAULT_ZCODE_DB = self.zc_db
+        usage_log.DEFAULT_WORKBUDDY_PROJECTS_DIR = self.wb_dir
         usage_log.DB_PATH = self.work / "usage.sqlite3"
-        conn = sqlite3.connect(self.oc_db)
-        conn.executescript("""
-            CREATE TABLE project (id TEXT PRIMARY KEY);
-            CREATE TABLE session (id TEXT PRIMARY KEY, project_id TEXT, directory TEXT);
-            CREATE TABLE part (id TEXT PRIMARY KEY, message_id TEXT, session_id TEXT,
-                                time_created INTEGER, data TEXT);
-        """)
-        conn.execute("INSERT INTO project(id) VALUES ('p1')")
-        conn.execute("INSERT INTO session(id,project_id,directory) VALUES ('s1','p1','/tmp/oc-proj')")
-        conn.execute("INSERT INTO part(id,message_id,session_id,time_created,data) VALUES (?,?,?,?,?)",
-                      ("pt1", "m1", "s1", int(datetime.now(timezone.utc).timestamp() * 1000),
-                       json.dumps({"type": "tool-skill", "tool": "skill", "input": {"name": "shared-skill"}})))
-        conn.commit()
-        conn.close()
+        now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
+        for db, part_data in ((self.oc_db, {"type": "tool-skill", "tool": "skill",
+                                            "input": {"name": "shared-skill"}}),
+                              (self.zc_db, {"type": "tool", "tool": "Skill",
+                                            "state": {"status": "completed",
+                                                      "input": {"skill": "shared-skill"}}})):
+            conn = sqlite3.connect(db)
+            conn.executescript("""
+                CREATE TABLE project (id TEXT PRIMARY KEY);
+                CREATE TABLE session (id TEXT PRIMARY KEY, project_id TEXT, directory TEXT);
+                CREATE TABLE part (id TEXT PRIMARY KEY, message_id TEXT, session_id TEXT,
+                                    time_created INTEGER, data TEXT);
+            """)
+            conn.execute("INSERT INTO project(id) VALUES ('p1')")
+            conn.execute("INSERT INTO session(id,project_id,directory) VALUES ('s1','p1','/tmp/oc-proj')")
+            conn.execute("INSERT INTO part(id,message_id,session_id,time_created,data) VALUES (?,?,?,?,?)",
+                          ("pt1", "m1", "s1", now_ms, json.dumps(part_data)))
+            conn.commit()
+            conn.close()
 
     def test_total_sums_across_agents(self):
         (self.claude_dir / "s1").mkdir()
@@ -383,11 +545,13 @@ class CrossAgentAggregationTests(unittest.TestCase):
         (self.codex_dir / "2026" / "07" / "10" / "rollout-1.jsonl").write_text(
             codex_session_meta() + "\n" +
             codex_exec_line("cat /x/.codex/skills/shared-skill/SKILL.md") + "\n")
+        (self.wb_dir / "proj").mkdir()
+        (self.wb_dir / "proj" / "a.jsonl").write_text(
+            workbuddy_line("shared-skill", call_id="c1") + "\n")
         st = usage_log.stats()
-        self.assertEqual(st["shared-skill"]["total"], 3)
-        self.assertEqual(st["shared-skill"]["by_agent"]["claude"]["total"], 1)
-        self.assertEqual(st["shared-skill"]["by_agent"]["codex"]["total"], 1)
-        self.assertEqual(st["shared-skill"]["by_agent"]["opencode"]["total"], 1)
+        self.assertEqual(st["shared-skill"]["total"], 5)
+        for agent in ("claude", "codex", "opencode", "zcode", "workbuddy"):
+            self.assertEqual(st["shared-skill"]["by_agent"][agent]["total"], 1, agent)
 
 
 class UsageApiRouteTests(unittest.TestCase):
@@ -404,6 +568,8 @@ class UsageApiRouteTests(unittest.TestCase):
         usage_log.DEFAULT_CLAUDE_PROJECTS_DIR = cls.projects_dir
         usage_log.DEFAULT_CODEX_DIRS = [cls.work / "no-codex"]
         usage_log.DEFAULT_OPENCODE_DB = cls.work / "no-opencode.db"
+        usage_log.DEFAULT_ZCODE_DB = cls.work / "no-zcode.db"
+        usage_log.DEFAULT_WORKBUDDY_PROJECTS_DIR = cls.work / "no-workbuddy"
         usage_log.DB_PATH = cls.work / "usage.sqlite3"
         f = cls.projects_dir / "s1" / "a.jsonl"
         f.parent.mkdir(parents=True, exist_ok=True)

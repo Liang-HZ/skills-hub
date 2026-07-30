@@ -18,6 +18,7 @@
   --line:#e4e7ec;--accent:#4655d4;--accent-soft:#eef0fd;--accent-ink:#3743ad;
   --ok:#188945;--okbg:#e3f5ea;--warn:#96620b;--warnbg:#fdf2d7;--bad:#c22f2f;--badbg:#fde7e7;
   --info:#215fb0;--infobg:#e6effc;--shadow:0 1px 2px rgba(16,24,40,.05);
+  --agent-alt:#8a3fa8;   /* 用量拆分里第五个 agent 的分类色:不复用 --bad,红点会被读成出错 */
   --r:12px;--rs:8px;
 }
 @media(prefers-color-scheme:dark){:root{
@@ -25,6 +26,7 @@
   --line:#2a303c;--accent:#7d8cf8;--accent-soft:#232a4d;--accent-ink:#aab4ff;
   --ok:#5fd08c;--okbg:#15301f;--warn:#e8b34c;--warnbg:#38290e;--bad:#f27b7b;--badbg:#3d1a1a;
   --info:#7fb0ee;--infobg:#16273f;--shadow:none;
+  --agent-alt:#c78ade;
 }}
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -613,7 +615,7 @@ sort_label:"排序",sort_name:"名称",sort_refs:"引用数",sort_uses:"触发�
 sort_dir_asc:"当前正序,点击切为倒序",sort_dir_desc:"当前倒序,点击切为正序",
 meta_created:"创建",meta_updated:"更新",
 empty_skills:"没有匹配的技能",no_desc:"还没写 description",
-agent_claude:"Claude Code",agent_codex:"Codex",agent_opencode:"OpenCode",
+agent_claude:"Claude Code",agent_codex:"Codex",agent_opencode:"OpenCode",agent_zcode:"zcode",agent_workbuddy:"WorkBuddy",
 pill_claude:"Claude 全局",pill_codex:"Codex 全局",pill_agents:"Agents 全局",pill_add_proj:"＋ 项目",
 t_edit:"编辑",t_view:"查看",t_check_update:"检查上游更新",t_fork:"转为独立副本,以后可编辑,不再跟随来源",t_delete:"删除",
 t_open_dir:"打开这个技能的文件夹,放脚本等其他文件",t_open_dir_btn:"打开目录",
@@ -644,7 +646,7 @@ cc_claude:"Claude Code(全局)",cc_codex:"Codex(全局)",cc_agents:"Agents(通�
 stale_proj:"失效项目(目录已不存在):",
 // 用量分析页
 nav_insights:"用量分析",h_insights:"用量分析",
-sub_insights:"引用数按当前开关状态实时算;触发次数来自 Claude Code / Codex / OpenCode 的本地会话记录(Cursor 暂不支持)。Codex 与 Codex App 的 runs 同口径:数「读到该技能或跑其脚本的轮数」,同一轮只算一次;我们扫全部历史会话,而 App 从功能上线(2026-05)才开始记,所以老技能这里的数字会比 App 大。首次统计要扫一遍本机历史会话,可能要几秒。",
+sub_insights:"引用数按当前开关状态实时算;触发次数来自 Claude Code / Codex / OpenCode / zcode / WorkBuddy 的本地会话记录(Cursor 暂不支持)。Codex 与 Codex App 的 runs 同口径:数「读到该技能或跑其脚本的轮数」,同一轮只算一次;我们扫全部历史会话,而 App 从功能上线(2026-05)才开始记,所以老技能这里的数字会比 App 大。首次统计要扫一遍本机历史会话,可能要几秒。",
 btn_refresh_usage:"刷新统计",lb_scanning:"统计中…(首次扫描可能要几秒)",lb_empty:"还没有可统计的技能",
 range_today:"今天",range_d7:"近7天",range_d30:"近30天",range_total:"累计",
 kpi_period:"所选时段触发",kpi_period_sub:"覆盖 COUNT 个技能",
@@ -784,7 +786,7 @@ sort_label:"Sort",sort_name:"Name",sort_refs:"References",sort_uses:"Triggers",s
 sort_dir_asc:"Ascending — click for descending",sort_dir_desc:"Descending — click for ascending",
 meta_created:"Created",meta_updated:"Updated",
 empty_skills:"No matching skills",no_desc:"No description yet",
-agent_claude:"Claude Code",agent_codex:"Codex",agent_opencode:"OpenCode",
+agent_claude:"Claude Code",agent_codex:"Codex",agent_opencode:"OpenCode",agent_zcode:"zcode",agent_workbuddy:"WorkBuddy",
 pill_claude:"Claude Global",pill_codex:"Codex Global",pill_agents:"Agents Global",pill_add_proj:"＋ Project",
 t_edit:"Edit",t_view:"View",t_check_update:"Check upstream for updates",t_fork:"Convert to standalone copy (editable, no longer follows source)",t_delete:"Delete",
 t_open_dir:"Open this skill's folder to add scripts and other files",t_open_dir_btn:"Open Dir",
@@ -810,7 +812,7 @@ use_n_skills:"skills",use_no_skill:"No skills enabled here",use_pick:"＋ Enable
 cc_claude:"Claude Code (global)",cc_codex:"Codex (global)",cc_agents:"Agents (general, global)",
 stale_proj:"Stale projects (directory no longer exists): ",
 nav_insights:"Insights",h_insights:"Usage Insights",
-sub_insights:"Reference counts are computed live from current toggles. Trigger counts come from local session logs of Claude Code / Codex / OpenCode (Cursor not supported yet). Codex matches the Codex App's \"runs\" definition: turns that read the skill or ran its scripts, counted once per turn; we scan all history while the App only counts since the feature shipped (2026-05), so older skills show larger numbers here. The first run scans local session history and may take a few seconds.",
+sub_insights:"Reference counts are computed live from current toggles. Trigger counts come from local session logs of Claude Code / Codex / OpenCode / zcode / WorkBuddy (Cursor not supported yet). Codex matches the Codex App's \"runs\" definition: turns that read the skill or ran its scripts, counted once per turn; we scan all history while the App only counts since the feature shipped (2026-05), so older skills show larger numbers here. The first run scans local session history and may take a few seconds.",
 btn_refresh_usage:"Refresh Stats",lb_scanning:"Scanning… (first run may take a few seconds)",lb_empty:"No skills to show yet",
 range_today:"Today",range_d7:"7 days",range_d30:"30 days",range_total:"All time",
 kpi_period:"Triggers in range",kpi_period_sub:"across COUNT skills",
@@ -1244,8 +1246,8 @@ function usageRows(){
   });
 }
 function metricFor(row){return {today:row.today,d7:row.d7,d30:row.d30,total:row.total}[RANGE]}
-const AGENT_COLOR={claude:"var(--accent)",codex:"var(--warn)",opencode:"var(--info)"};
-const AGENT_ORDER=["claude","codex","opencode"];
+const AGENT_COLOR={claude:"var(--accent)",codex:"var(--warn)",opencode:"var(--info)",zcode:"var(--ok)",workbuddy:"var(--agent-alt)"};
+const AGENT_ORDER=["claude","codex","opencode","zcode","workbuddy"];
 function usageHovercard(byAgent,metricKey,total){
   if(!total)return "";
   const rows=AGENT_ORDER.map(a=>({a,n:(byAgent&&byAgent[a]&&byAgent[a][metricKey])||0})).filter(r=>r.n>0);

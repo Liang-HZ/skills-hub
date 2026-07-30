@@ -1,6 +1,6 @@
 """技能触发次数统计 —— 从各 coding agent 的本地会话记录里数技能调用。
 
-支持三个 agent,信号可靠度依次下降:
+支持五个 agent,信号可靠度依次下降:
 
 - **claude**:~/.claude/projects/**/*.jsonl,每次调用 Skill 工具都有一条结构化
   tool_use 记录(name="Skill", input.skill=技能名),信号干净。resume/fork 会把
@@ -9,13 +9,23 @@
 - **opencode**:opencode.db(sqlite,session/message/part 三张表),技能通过官方
   内置 `skill` 工具调用,记在 part.data 里(实测形状:
   {"type":"tool","tool":"skill","state":{"input":{"name":...}}}),信号干净。
+- **zcode**:~/.zcode/cli/db/db.sqlite,与 opencode 同一套 session/message/part
+  表结构,走同一个扫描器;只是工具名是 "Skill"、技能名在 state.input.skill
+  (本机实测形状:{"type":"tool","tool":"Skill","state":{"status":"completed",
+  "input":{"skill":...}}})。state.status=="error" 的不算——那多半是
+  "Skill not found",技能压根没跑起来。
+- **workbuddy**:~/.workbuddy/projects/<项目>/<会话>.jsonl,布局和 Claude 一样但
+  每行是自己的形状:{"type":"function_call","name":"Skill",
+  "arguments":"{\\"skill\\":...}"(JSON 字符串),"callId","sessionId","cwd",
+  "timestamp"(毫秒)}。callId 有 "Skill_0" 这种按会话计数的写法、跨会话会重名,
+  所以去重键是 (sessionId, callId) 而不是光 callId。
 - **codex**:~/.codex/sessions/**/*.jsonl + ~/.codex/archived_sessions/*.jsonl。
   Codex 自身的技能调用检测就是启发式(源码里的隐式调用检测:命令读了 SKILL.md
   或跑了技能 scripts/ 下的脚本),Codex App 显示的 "runs" 也来自这套检测。
   这里对齐它的口径:只认 response_item 里 exec 类工具调用的**命令文本**
   (会话文件里到处是 SKILL.md 字样——turn_context 每轮注入技能列表、输出回显、
   compacted 历史副本,全都不是触发);路径必须落在标准技能放置目录
-  (.claude/.codex/.agents,可带 skills 子层)——在 skills-hub 库目录里开发技能
+  (.claude/.codex/.agents/.zcode/.workbuddy,可带 skills 子层)——在 skills-hub 库目录里开发技能
   不算使用;命中"读 SKILL.md"或"跑 <技能>/scripts/ 脚本"都算;**同一轮
   (turn_context 分界)同一技能只算一次**。语义即「触发轮数」,与 Codex App 的
   runs 同口径(实测三个技能对齐度 93%-100%;App 只从 2026-05 功能上线后开始记,
@@ -25,8 +35,8 @@ Cursor 的本地存储(state.vscdb 里的 aiService.prompts / cursorDiskKV 等 k
 社区逆向出来的、官方不公开的格式,版本升级随时可能改动导致静默失效,暂不接入;
 等社区/官方有更稳定的参考再说。
 
-三者共用同一张 events 表,按 (agent, skill, day, project) 聚合、增量扫描(文件类
-的按字节偏移,opencode 的按 sqlite rowid 高水位),本模块对所有数据源都只读不改。
+五者共用同一张 events 表,按 (agent, skill, day, project) 聚合、增量扫描(文件类
+的按字节偏移,sqlite 类的按 rowid 高水位),本模块对所有数据源都只读不改。
 """
 import json
 import os
@@ -80,23 +90,42 @@ def _default_opencode_db():
     return candidates[0]
 
 
+def _default_zcode_db():
+    """zcode CLI 的会话库:<ZCODE_HOME>/cli/db/db.sqlite,默认 ~/.zcode。"""
+    override = os.environ.get("ZCODE_DB_PATH")
+    if override:
+        return Path(override)
+    return Path(os.environ.get("ZCODE_HOME") or (Path.home() / ".zcode")) / "cli" / "db" / "db.sqlite"
+
+
+def _default_workbuddy_projects_dir():
+    """和 Claude 同样的布局:<WORKBUDDY_HOME>/projects/<按路径编码的项目名>/*.jsonl,默认 ~/.workbuddy。"""
+    override = os.environ.get("WORKBUDDY_PROJECTS_DIR")
+    if override:
+        return Path(override)
+    base = os.environ.get("WORKBUDDY_HOME") or (Path.home() / ".workbuddy")
+    return Path(base) / "projects"
+
+
 DEFAULT_CLAUDE_PROJECTS_DIR = _default_claude_projects_dir()
 DEFAULT_CODEX_DIRS = _default_codex_dirs()
 DEFAULT_OPENCODE_DB = _default_opencode_db()
+DEFAULT_ZCODE_DB = _default_zcode_db()
+DEFAULT_WORKBUDDY_PROJECTS_DIR = _default_workbuddy_projects_dir()
 
-SUPPORTED_AGENTS = ("claude", "codex", "opencode")
+SUPPORTED_AGENTS = ("claude", "codex", "opencode", "zcode", "workbuddy")
 
 _LOCK = threading.Lock()
 _SENTINEL_DAY = "0000-00-00"   # 时间戳缺失/解析失败时的占位日:排序恒最早,不会污染"今日/近N天"
-# 只认标准技能放置目录下的路径(.claude/.codex/.agents,可带 skills 子层,兼容 Windows 反斜杠)。
+# 只认标准技能放置目录下的路径(.claude/.codex/.agents/.zcode/.workbuddy,可带 skills 子层,兼容 Windows 反斜杠)。
 # 库目录(library/<name>/SKILL.md)故意不匹配:在 skills-hub 里开发技能不算使用。
-_SKILL_PATH_RE = re.compile(r'\.(?:claude|codex|agents)[/\\]+(?:skills[/\\]+)?([A-Za-z0-9][\w.-]*)[/\\]+SKILL\.md')
+_SKILL_PATH_RE = re.compile(r'\.(?:claude|codex|agents|zcode|workbuddy)[/\\]+(?:skills[/\\]+)?([A-Za-z0-9][\w.-]*)[/\\]+SKILL\.md')
 # 隐式调用的另一半:跑了技能 scripts/ 目录下的脚本(与 Codex 自身检测同口径)
-_SKILL_SCRIPT_RE = re.compile(r'\.(?:claude|codex|agents)[/\\]+(?:skills[/\\]+)?([A-Za-z0-9][\w.-]*)[/\\]+scripts[/\\]')
+_SKILL_SCRIPT_RE = re.compile(r'\.(?:claude|codex|agents|zcode|workbuddy)[/\\]+(?:skills[/\\]+)?([A-Za-z0-9][\w.-]*)[/\\]+scripts[/\\]')
 # Codex 里真正"发起执行"的 exec 类工具;apply_patch(编辑)、update_plan、read_mcp_resource 等都不算触发
 _CODEX_EXEC_TOOLS = {"exec_command", "exec", "shell", "local_shell", "container.exec"}
 
-_SCHEMA_VERSION = 3   # v3:codex 按轮去重(对齐 Codex App runs 口径)+ scripts/ 隐式调用;升版时全量重建
+_SCHEMA_VERSION = 4   # v4:接入 zcode / workbuddy,且 part 库里 status=error 的调用不再计数;升版时全量重建
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS files (
@@ -342,10 +371,11 @@ def _scan_codex(root):
         conn.close()
 
 
-# ---------- OpenCode:官方内置 skill 工具,记在 opencode.db 的 part 表里 ----------
+# ---------- OpenCode / zcode:内置 skill 工具,记在 session/message/part 库的 part 表里 ----------
+# 两者同一套表结构,共用下面这个扫描器,只有工具名大小写和技能名字段不同,一并认。
 
-def _opencode_skill_name(data_text):
-    if not data_text or ("skill" not in data_text):
+def _part_skill_name(data_text):
+    if not data_text or ("skill" not in data_text and "Skill" not in data_text):
         return None
     try:
         p = json.loads(data_text)
@@ -353,21 +383,28 @@ def _opencode_skill_name(data_text):
         return None
     if not isinstance(p, dict):
         return None
-    if p.get("type") != "tool-skill" and p.get("tool") != "skill":
+    tool = p.get("tool")
+    if p.get("type") != "tool-skill" and str(tool).lower() != "skill":
         return None
-    for src in (p.get("input"), (p.get("state") or {}).get("input"), p.get("args"),
+    state = p.get("state") or {}
+    if state.get("status") == "error":
+        return None   # 没跑起来(如 "Skill not found: x"),不算一次使用
+    for src in (p.get("input"), state.get("input"), p.get("args"),
                 (p.get("toolInvocation") or {}).get("args")):
-        if isinstance(src, dict) and src.get("name"):
-            return src["name"]
+        if isinstance(src, dict):
+            # opencode 写 input.name,zcode 写 input.skill
+            name = src.get("name") or src.get("skill")
+            if name:
+                return name
     return None
 
 
-def _scan_opencode(db_path):
+def _scan_part_db(db_path, agent):
     if not db_path.is_file():
         return
     conn = _conn()
     try:
-        row = _file_row(conn, "opencode", db_path)
+        row = _file_row(conn, agent, db_path)
         last_rowid = int(row[2]) if row else 0
         try:
             src = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
@@ -382,7 +419,7 @@ def _scan_opencode(db_path):
             max_rowid = last_rowid
             for rowid, data, time_created, directory in cur:
                 max_rowid = max(max_rowid, rowid)
-                name = _opencode_skill_name(data)
+                name = _part_skill_name(data)
                 if not name:
                     continue
                 day = _epoch_day(time_created)
@@ -391,29 +428,94 @@ def _scan_opencode(db_path):
                 tally[key] = tally.get(key, 0) + 1
         finally:
             src.close()
-        _add_events(conn, "opencode", tally)
-        _save_file_row(conn, "opencode", db_path, 0, 0, max_rowid)
+        _add_events(conn, agent, tally)
+        _save_file_row(conn, agent, db_path, 0, 0, max_rowid)
         conn.commit()
     finally:
         conn.close()
 
 
-def scan(claude_dir=None, codex_dirs=None, opencode_db=None):
-    """增量扫描三个 agent 的新增/变化记录,把新事件并入 usage.sqlite3。"""
+# ---------- WorkBuddy:结构化 Skill 调用,布局同 Claude、每行形状是自己的 ----------
+
+def _workbuddy_skill_events(raw_line: bytes):
+    if b'"Skill"' not in raw_line:
+        return []
+    try:
+        obj = json.loads(raw_line)
+    except ValueError:
+        return []
+    if obj.get("type") != "function_call" or obj.get("name") != "Skill":
+        return []
+    args = obj.get("arguments")
+    if isinstance(args, str):
+        try:
+            args = json.loads(args)
+        except ValueError:
+            return []
+    if not isinstance(args, dict):
+        return []
+    name = args.get("skill") or args.get("name")
+    if not name:
+        return []
+    day = _epoch_day(obj.get("timestamp"))
+    project = obj.get("cwd") or ""
+    # callId 可能是 "Skill_0" 这种按会话计数的写法,跨会话会重名,所以带上 sessionId
+    call_id = obj.get("callId")
+    uniq = f"workbuddy:{obj.get('sessionId') or ''}:{call_id}" if call_id else None
+    return [(uniq, (name, day, project))]
+
+
+def _scan_workbuddy(root):
+    if not root.is_dir():
+        return
+    conn = _conn()
+    try:
+        for path in sorted(root.rglob("*.jsonl")):
+            try:
+                st = path.stat()
+            except OSError:
+                continue
+            row = _file_row(conn, "workbuddy", path)
+            if row and row[0] == st.st_mtime and row[1] == st.st_size:
+                continue
+            prev_offset = row[2] if row and st.st_size >= row[1] else 0
+            try:
+                lines, new_offset = _read_new_lines(path, prev_offset)
+            except OSError:
+                continue
+            tally = {}
+            for raw in lines:
+                for call_id, key in _workbuddy_skill_events(raw):
+                    if call_id:
+                        cur = conn.execute("INSERT OR IGNORE INTO claude_calls(id) VALUES(?)", (call_id,))
+                        if cur.rowcount == 0:
+                            continue   # 同一次调用被复制进了别的会话文件
+                    tally[key] = tally.get(key, 0) + 1
+            _add_events(conn, "workbuddy", tally)
+            _save_file_row(conn, "workbuddy", path, st.st_mtime, st.st_size, new_offset)
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def scan(claude_dir=None, codex_dirs=None, opencode_db=None, zcode_db=None, workbuddy_dir=None):
+    """增量扫描各 agent 的新增/变化记录,把新事件并入 usage.sqlite3。"""
     with _LOCK:
         _scan_claude(Path(claude_dir) if claude_dir else DEFAULT_CLAUDE_PROJECTS_DIR)
         for root in (codex_dirs if codex_dirs is not None else DEFAULT_CODEX_DIRS):
             _scan_codex(Path(root))
-        _scan_opencode(Path(opencode_db) if opencode_db else DEFAULT_OPENCODE_DB)
+        _scan_part_db(Path(opencode_db) if opencode_db else DEFAULT_OPENCODE_DB, "opencode")
+        _scan_part_db(Path(zcode_db) if zcode_db else DEFAULT_ZCODE_DB, "zcode")
+        _scan_workbuddy(Path(workbuddy_dir) if workbuddy_dir else DEFAULT_WORKBUDDY_PROJECTS_DIR)
 
 
-def stats(claude_dir=None, codex_dirs=None, opencode_db=None):
+def stats(claude_dir=None, codex_dirs=None, opencode_db=None, zcode_db=None, workbuddy_dir=None):
     """扫描后返回 {技能名: {total, d7, d30, today, last_day, projects, by_agent}}。
 
     by_agent 是 {agent名: {total, d7, d30, today}} 的全量明细,给前端做「悬浮看各
-    agent 占比」用;外层的 total/d7/d30/today 是三个 agent 加总。
+    agent 占比」用;外层的 total/d7/d30/today 是各 agent 加总。
     """
-    scan(claude_dir, codex_dirs, opencode_db)
+    scan(claude_dir, codex_dirs, opencode_db, zcode_db, workbuddy_dir)
     with _LOCK:
         conn = _conn()
         try:

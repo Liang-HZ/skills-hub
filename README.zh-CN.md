@@ -2,18 +2,18 @@
 
 **你装了一堆 agent 技能。到底哪些真的被触发过?**
 
-Skills Hub 把本机所有 AI agent 技能收进一个本地库,并用真实数字回答这个问题——它读 Claude Code、Codex、OpenCode 各自的本地会话记录,数出每个技能实际被触发了多少次。开关、组合、更新都在同一个本地网页里完成。
+Skills Hub 把本机所有 AI agent 技能收进一个本地库,并用真实数字回答这个问题——它读 Claude Code、Codex、OpenCode、zcode、WorkBuddy 各自的本地会话记录,数出每个技能实际被触发了多少次。开关、组合、更新都在同一个本地网页里完成。
 
 [打开在线模拟 →](https://skills.liangai.org) · [English →](README.md)
 
-![Skills Hub 用量分析:每个技能在 Claude Code / Codex / OpenCode 上的真实触发次数,从未触发过的技能一目了然](docs/screenshot.png)
+![Skills Hub 用量分析:每个技能在 Claude Code / Codex / OpenCode / zcode / WorkBuddy 上的真实触发次数,从未触发过的技能一目了然](docs/screenshot.png)
 
 所有技能(带 `SKILL.md` 的文件夹)的唯一真源放在本机的 `library/`,再链接到各个 agent 找技能的地方——Claude Code(`~/.claude/skills`)、Codex(`~/.codex/skills`)、通用 Agents(`~/.agents/skills`)或任意项目目录。改一处、处处生效;关掉开关只是摘链接,技能永远安全地留在库里。
 
 - **真实触发次数,不是估算**——每个技能今天/近7天/近30天/累计的用量,可按 agent 拆分,直接读各 agent 自己的本地记录。从没用过的技能会自己沉到列表底部。
 - **健康建议**——点名僵尸技能(处处启用、从不触发)、值得升全局的多项目技能,并粗估这些常驻注入的技能描述每个会话花掉你多少上下文 token。
 - **私有仓库备份 · 多机同步**——技能库本身就是 git 仓库、每次改动自动提交;绑定你自己的私有仓库后,一键拉取另一台电脑的改动并推送这边的。
-- **一个库,喂所有 agent**——Claude Code、Codex、OpenCode,或任何会读技能目录的工具;全局或按项目都行。
+- **一个库,喂所有 agent**——Claude Code、Codex、OpenCode、zcode、WorkBuddy,或任何会读技能目录的工具;全局或按项目都行。
 - **单文件,无需 npm/pip 安装**--只需 Python 3.9+ 和 Git。一个文件,一条命令。未安装 Git 时会显示安装引导。
 - **纯本地**——只监听 `127.0.0.1:7799`,不上传任何数据,所有数据源只读不改。
 - **步步可回退**——每次变更自动进本地 git 历史;删除只进回收站,从不真删。
@@ -58,10 +58,12 @@ Windows:双击 `start-windows.bat`(或 `py webui.py`)——它会自动探测 `p
 |-------|-------|------|
 | Claude Code | `~/.claude/projects/**/*.jsonl`(CLI 与桌面 App 同一存储) | 精确 —— 每次调用都有一条结构化 `Skill` 工具记录,按调用 id 去重,resume/fork 复制历史不会重复计数 |
 | OpenCode | `opencode.db`(XDG 路径,`$XDG_DATA_HOME` → `~/.local/share/opencode`) | 精确 —— 官方内置 `skill` 工具调用 |
+| zcode | `~/.zcode/cli/db/db.sqlite`(`ZCODE_HOME`/`ZCODE_DB_PATH` 可搬) | 精确 —— 表结构与 OpenCode 同源(`session`/`message`/`part`),共用同一个扫描器;工具名是 `Skill`、技能名在 `state.input.skill`。`error` 结尾的调用(多半是 `Skill not found`)不计数 |
+| WorkBuddy | `~/.workbuddy/projects/**/*.jsonl`(`WORKBUDDY_HOME`/`WORKBUDDY_PROJECTS_DIR` 可搬) | 精确 —— 每次调用一条 `function_call`(`name` 为 `Skill`,`arguments` 是 JSON **字符串**),按 `(sessionId, callId)` 去重:它的 callId 有 `Skill_0` 这种按会话计数的写法,跨会话会重名 |
 | Codex | `~/.codex/sessions/**/*.jsonl`(CLI 与 Codex App 同一存储) | **与 Codex App 的 "runs" 同口径** —— 数「命令读了该技能 SKILL.md 或跑了它 scripts/ 脚本」的轮数,同一轮只算一次。实测与 App 对齐度 93%–100%;我们扫全部历史,App 只从功能上线(2026-05)起记,老技能这边数字会更大 |
 | Cursor | —— | 暂不支持:它的本地存储是社区逆向出来的、官方不公开的 `state.vscdb` 格式,版本升级可能导致统计静默失效 |
 
-扫描是增量的(日志文件按字节偏移、OpenCode 按 sqlite rowid 高水位),不会重复计数,也不会把没写完的半条记录当脏数据。首次要扫一遍已有历史,可能要几秒;之后基本秒开。
+扫描是增量的(日志文件按字节偏移、sqlite 类的按 rowid 高水位),不会重复计数,也不会把没写完的半条记录当脏数据。首次要扫一遍已有历史,可能要几秒;之后基本秒开。
 
 ### 第三方技能的主权模型
 

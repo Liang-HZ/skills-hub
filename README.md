@@ -2,18 +2,18 @@
 
 **You've installed a pile of agent skills. Which ones actually fire?**
 
-Skills Hub keeps every AI agent skill on your machine in one local library — and answers that question with real numbers, by reading Claude Code's, Codex's and OpenCode's own session logs to count how often each skill was actually triggered. Manage, toggle, group and update all of them from a single local web UI.
+Skills Hub keeps every AI agent skill on your machine in one local library — and answers that question with real numbers, by reading Claude Code's, Codex's, OpenCode's, zcode's and WorkBuddy's own session logs to count how often each skill was actually triggered. Manage, toggle, group and update all of them from a single local web UI.
 
 [Try the interactive demo →](https://skills.liangai.org) · [中文文档 →](README.zh-CN.md)
 
-![Skills Hub usage insights: per-skill trigger counts across Claude Code, Codex and OpenCode, with never-triggered skills called out](docs/screenshot-en.png)
+![Skills Hub usage insights: per-skill trigger counts across Claude Code, Codex, OpenCode, zcode and WorkBuddy, with never-triggered skills called out](docs/screenshot-en.png)
 
 Every skill (a folder with a `SKILL.md`) has a single source of truth in a local `library/`, linked into wherever your agents look for skills — Claude Code (`~/.claude/skills`), Codex (`~/.codex/skills`), generic Agents (`~/.agents/skills`), or any project directory. Edit once, effective everywhere; flip a toggle off and the skill stays safe in the library.
 
 - **Real trigger counts, not guesses** — per-skill usage across today / 7d / 30d / all time, split by agent, read straight from each agent's own local logs. The skills you never actually use sort themselves to the bottom.
 - **Health suggestions** — zombie skills (enabled everywhere, firing nowhere), promote-to-global candidates, and a context-tax estimate of what those always-injected skill descriptions cost you per session.
 - **Private backup & multi-machine sync** — your hub is a git repo with every change auto-committed; bind your own private repo and one click pulls the other machine's changes and pushes yours.
-- **One library, every agent** — Claude Code, Codex, OpenCode, or anything else that reads a skills directory. Globally or per project.
+- **One library, every agent** — Claude Code, Codex, OpenCode, zcode, WorkBuddy, or anything else that reads a skills directory. Globally or per project.
 - **Single-file, no npm/pip install** — Python 3.9+ and Git are the only requirements. One file, one command.
 - **Local-first** — a loopback-only HTTP server (`127.0.0.1:7799`). Nothing is uploaded; every data source is read-only.
 - **Everything is undoable** — every change is committed to a local git history; deletes go to a trash folder, never `rm -rf`.
@@ -58,10 +58,12 @@ Two independent measures, both computed locally — nothing is uploaded, and eve
 |-------|--------|--------|
 | Claude Code | `~/.claude/projects/**/*.jsonl` (CLI and desktop app share this store) | Exact — a structured `Skill` tool call per invocation, deduplicated by call id so resumed/forked sessions never double-count |
 | OpenCode | `opencode.db` (XDG path, `$XDG_DATA_HOME` → `~/.local/share/opencode`) | Exact — the built-in `skill` tool call |
+| zcode | `~/.zcode/cli/db/db.sqlite` (`ZCODE_HOME`/`ZCODE_DB_PATH` to relocate) | Exact — same `session`/`message`/`part` schema as OpenCode, so it shares the scanner; the tool is named `Skill` and the skill name lives in `state.input.skill`. Calls that ended in `error` (typically `Skill not found`) are not counted |
+| WorkBuddy | `~/.workbuddy/projects/**/*.jsonl` (`WORKBUDDY_HOME`/`WORKBUDDY_PROJECTS_DIR` to relocate) | Exact — one `function_call` record named `Skill` per invocation (`arguments` is a JSON *string*), deduplicated by `(sessionId, callId)`: its call ids include per-session counters like `Skill_0` that repeat across sessions |
 | Codex | `~/.codex/sessions/**/*.jsonl` (CLI and the Codex App share this store) | **Same definition as the Codex App's "runs"** — turns whose commands read the skill's `SKILL.md` or ran its `scripts/`, counted once per turn. Measured 93–100% agreement with the App on real data; we scan all history while the App only counts since the feature shipped (2026-05), so older skills show more here |
 | Cursor | — | Not supported yet: its local store is an unofficial, reverse-engineered `state.vscdb` format that could break silently on upgrade |
 
-Scanning is incremental (byte offsets for log files, a rowid high-water mark for OpenCode), so nothing is double-counted and a half-written record is never parsed. The first run walks your existing history and may take a few seconds; after that it's instant.
+Scanning is incremental (byte offsets for log files, a rowid high-water mark for the sqlite ones), so nothing is double-counted and a half-written record is never parsed. The first run walks your existing history and may take a few seconds; after that it's instant.
 
 ### The sovereignty model for third-party skills
 

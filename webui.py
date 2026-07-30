@@ -55,7 +55,18 @@ NO_HOOKS_DIR = HUB / ".state" / "no-hooks"   # 空目录:管理器发起的 git 
 PORT = 7799
 SERVER_PORT = PORT
 NAME_RE = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
-KINDS = ("claude", "codex", "agents")   # 技能可放置的目录族:.claude / .codex / .agents
+# 技能可放置的目录族:每族都是 ~/.<kind>/skills(全局)和 <项目>/.<kind>/skills(项目级)。
+# always=True 的族即使本机还没这个目录也一直显示(装了就能用);其余按目录是否存在决定要不要露出,
+# 免得没装这些工具的机器上界面被一堆空位置占满。新增一族只要在这里加一行 + 补三条文案
+# (pill_<kind> / cc_<kind> / radio_<kind>),前后端其余部分都由 KINDS 驱动。
+KIND_META = {
+    "claude":    {"icon": "C", "always": True},
+    "codex":     {"icon": "X", "always": True},
+    "agents":    {"icon": "A", "always": False},
+    "zcode":     {"icon": "Z", "always": False},
+    "workbuddy": {"icon": "W", "always": False},
+}
+KINDS = tuple(KIND_META)
 ROOTS = {k: Path.home() / f".{k}/skills" for k in KINDS}
 
 # 写 API 的会话令牌:每次启动随机生成,只随页面下发,POST 必须带上(防跨站)
@@ -332,7 +343,7 @@ def clean_targets():
 
 
 def cleanup_target_dirs(target: str):
-    """从项目移除技能后:skills 目录空了就删掉,上层 .claude/.codex/.agents 也空了就一并删。
+    """从项目移除技能后:skills 目录空了就删掉,上层 .<kind> 目录也空了就一并删。
     只作用于项目目录,永不碰全局家目录。"""
     if target in KINDS:
         return
@@ -821,7 +832,7 @@ def api_state():
     org = origins()
     projects = [t for t in read_targets() if Path(t).exists()]
     stale = [t for t in read_targets() if not Path(t).exists()]
-    # 项目级放置点:每个项目下实际存在的 .claude/.codex/.agents skills 目录各算一个
+    # 项目级放置点:每个项目下实际存在的 .<kind>/skills 目录各算一个
     proj_targets = [{"path": p, "kind": kind, "target": f"{p}::{kind}"}
                     for p in projects for kind in KINDS
                     if (Path(p) / f".{kind}" / "skills").is_dir()]
@@ -873,7 +884,9 @@ def api_state():
     if sys.platform == "darwin":
         autostart = "com.skills-hub.webui" in sh(["launchctl", "list"]).stdout
     return {"skills": skills, "projects": projects, "proj_targets": proj_targets,
-            "agents_root": ROOTS["agents"].is_dir(),
+            # 目录族清单交给前端渲染:哪些一直显示、哪些等本机真有那个目录才显示,前端按 kind_roots 判断
+            "kinds": [{"kind": k, **KIND_META[k], "root": f"~/.{k}/skills"} for k in KINDS],
+            "kind_roots": {k: ROOTS[k].is_dir() for k in KINDS},
             "stale_targets": stale, "warnings": warnings, "divergences": divergences,
             "sets": sets, "sets_raw": sets_raw, "sources": vendor_sources(),
             "clean_empty_dirs": ui_conf().get("clean_empty_dirs", True),
@@ -964,9 +977,9 @@ def op_delete(b):
 
 
 def in_skill_root(p: Path) -> bool:
-    """判断 p 是不是"标准技能根目录"下的一个条目:某个 .claude/.codex/.agents 的
+    """判断 p 是不是"标准技能根目录"下的一个条目:某个 KINDS 目录族(.claude/.codex/…)的
     skills 子目录里(不管是全局 ~/ 下还是某个项目下)。用来决定"收编"还是"导入"。"""
-    return p.parent.name == "skills" and p.parent.parent.name in (".claude", ".codex", ".agents")
+    return p.parent.name == "skills" and p.parent.parent.name in {f".{k}" for k in KINDS}
 
 
 def adopt_move(src: Path, name: str, lang: str = "zh") -> str:
@@ -1013,7 +1026,7 @@ def adoptable(e: Path) -> bool:
 
 
 def op_scan_local(b):
-    """扫描全局与/或各项目的 .claude/.codex/.agents,找出还没进库的技能。纯本地文件遍历。
+    """扫描全局与/或各项目的各个 .<kind>/skills,找出还没进库的技能。纯本地文件遍历。
     scope: "all"(默认)| "global"(只看 ~/.claude 等全局目录)| "project"(只看已登记项目)。"""
     scope = b.get("scope") or "all"
     found, seen = [], set()
@@ -1063,7 +1076,7 @@ def op_adopt_bulk(b):
 def op_import(b):
     """从任意目录导入:单个技能目录(内有 SKILL.md),或含多个技能子目录的父目录。
     只认 SKILL.md 这一个标准,目录里其余文件原样保留。
-    源如果本来就在标准技能根目录下(某个 .claude/.codex/.agents 的 skills 子目录),
+    源如果本来就在标准技能根目录下(某个 .<kind> 的 skills 子目录),
     按「收编」处理——移入库、原位置留软链接,跟扫描发现的技能待遇一致;
     否则视为随手一个目录(下载缓存、别人分享的文件夹等),按「导入」处理——
     复制进库,原目录不动,不会往下载目录或别人的仓库里塞软链接。"""
@@ -1798,8 +1811,8 @@ autostart_on:"管理台常驻 运行中",autostart_off:"管理台常驻 未注�
 // 技能页
 h_skills:"技能",sub_skills:"技能保存在库里,删不丢、改全生效。开关拨绿 = 在那个地方能用。",
 btn_open_lib:"打开库目录",btn_scan:"扫描本机技能",btn_import:"导入目录",btn_browse:"浏览…",btn_add_online:"从网上添加",btn_new_skill:"＋ 新建技能",
-t_scan_range:"在这些位置里找还没进库的技能:",t_scan_range_proj:"已登记项目(各自的 .claude/.codex/.agents/skills):",
-dd_more:"更多扫描范围",dd_scan_global:"只扫描全局目录",dd_scan_global_hint:".claude/skills、.codex/skills、.agents/skills",
+t_scan_range:"在这些位置里找还没进库的技能:",t_scan_range_proj:"已登记项目(各自的技能目录):",
+dd_more:"更多扫描范围",dd_scan_global:"只扫描全局目录",
 dd_scan_project:"只扫描项目目录",dd_scan_project_empty:"还没有登记任何项目,先在某个技能卡片上点「＋项目」",
 t_import_hint:"导入目录 = 你指定任意目录(单个技能或一堆技能),复制进库,原目录不动。跟「扫描本机技能」的区别:那个只在固定的几个位置(全局 + 已登记项目)里找,这个你想导哪就导哪。",
 ph_search:"搜技能名或描述…",chip_all:"全部",chip_own:"自建",chip_ext:"网上引入",
@@ -1809,7 +1822,7 @@ sort_dir_asc:"当前正序,点击切为倒序",sort_dir_desc:"当前倒序,点�
 meta_created:"创建",meta_updated:"更新",
 empty_skills:"没有匹配的技能",no_desc:"还没写 description",
 agent_claude:"Claude Code",agent_codex:"Codex",agent_opencode:"OpenCode",agent_zcode:"zcode",agent_workbuddy:"WorkBuddy",
-pill_claude:"Claude 全局",pill_codex:"Codex 全局",pill_agents:"Agents 全局",pill_add_proj:"＋ 项目",
+pill_claude:"Claude 全局",pill_codex:"Codex 全局",pill_agents:"Agents 全局",pill_zcode:"zcode 全局",pill_workbuddy:"WorkBuddy 全局",pill_add_proj:"＋ 项目",
 t_edit:"编辑",t_view:"查看",t_check_update:"检查上游更新",t_fork:"转为独立副本,以后可编辑,不再跟随来源",t_delete:"删除",
 t_open_dir:"打开这个技能的文件夹,放脚本等其他文件",t_open_dir_btn:"打开目录",
 t_add_proj_title:"在某个项目目录里单独启用",
@@ -1835,7 +1848,7 @@ h_usage:"使用情况",sub_usage:"每个地方各自开了哪些技能。全局 
 btn_clean:"清理失效项目",h_global:"全局",h_projects:"各项目",n_places:"处",ph_search_proj:"搜项目…",
 empty_proj_new:"还没有项目在用技能。在「技能」页点某个技能的「＋ 项目」即可。",empty_proj_match:"没有匹配的项目",
 use_n_skills:"个技能",use_no_skill:"这里没开任何技能",use_pick:"＋ 开启技能",use_close_title:"点击在这里关闭",
-cc_claude:"Claude Code(全局)",cc_codex:"Codex(全局)",cc_agents:"Agents(通用,全局)",
+cc_claude:"Claude Code(全局)",cc_codex:"Codex(全局)",cc_agents:"Agents(通用,全局)",cc_zcode:"zcode(全局)",cc_workbuddy:"WorkBuddy(全局)",
 stale_proj:"失效项目(目录已不存在):",
 // 用量分析页
 nav_insights:"用量分析",h_insights:"用量分析",
@@ -1908,7 +1921,7 @@ sync_restore_label:"开关状态(哪些技能全局开着)会随同步记录进�
 btn_profile_restore:"恢复开关状态",
 btn_copy:"复制",
 copied:"已复制",
-h_settings:"设置",h_behavior:"行为",clean_empty_label:"从项目移除技能后,若 .claude/.codex/.agents 目录已空则一并删掉(保持项目干净;全局目录永不动)",
+h_settings:"设置",h_behavior:"行为",clean_empty_label:"从项目移除技能后,若 .claude/.codex 等技能目录已空则一并删掉(保持项目干净;全局目录永不动)",
 h_boundary:"本工具的边界",
 bnd_1:"· 只管理技能的存储、来源、组合与启用位置,不执行技能内容,不自动下载任何东西。",
 bnd_2:"· 所有联网动作(下载来源 / 检查更新 / 执行更新)都只在你点击对应按钮时发生。",
@@ -1930,9 +1943,9 @@ se_ph:"my-set(小写字母、数字、连字符)",
 sc_close:"关闭",
 // JS 动态消息
 m_new_skill_t:"新建技能",m_new_skill_h:"名字只能用小写字母、数字、连字符。页面只编辑 SKILL.md;脚本等其他文件建好后用「打开目录」放进技能文件夹。",
-m_scan_toast:"正在扫描本机 .claude/.codex/.agents…",m_scan_none:"没有发现库外的技能,都已在库里了",
+m_scan_toast:"正在扫描本机各个技能目录…",m_scan_none:"没有发现库外的技能,都已在库里了",
 m_scan_t:"发现 COUNT 个库外技能",m_scan_h:"勾选要收进库的,点确定。收编 = 移进库、原位置留引用,用法不变;之后就能统一开关。",
-m_import_t:"从目录导入技能",m_import_h:"支持单个技能目录(内有 SKILL.md),或装着多个技能子目录的文件夹。只认 SKILL.md 这一个标准,其余文件原样保留。如果某个技能本来就在 .claude/.codex/.agents 的标准位置下,会按「收编」处理——移入库、原位置留软链接;其余按「导入」处理——复制进库,原目录不动。",
+m_import_t:"从目录导入技能",m_import_h:"支持单个技能目录(内有 SKILL.md),或装着多个技能子目录的文件夹。只认 SKILL.md 这一个标准,其余文件原样保留。如果某个技能本来就在 .claude/.codex 等标准位置下,会按「收编」处理——移入库、原位置留软链接;其余按「导入」处理——复制进库,原目录不动。",
 m_import_find:"查找技能",m_import_empty:"这个目录里没找到带 SKILL.md 的技能",
 m_imp_ph:"/Users/you/Downloads/xxx-skills",
 m_addproj_t:"在某个项目里用「SKILL」",m_addproj_h:"输入项目目录的完整路径,并选择放进哪个目录;这个技能将只对该项目生效",
@@ -1961,7 +1974,7 @@ m_no_desc_i:"还没写 description",
 m_row_conflict:"库里已有同名,跳过",m_row_invalid:"名字须小写字母/数字/连字符,改名后再来",
 m_row_adopt:"收编",m_row_adopt_hint:"源在标准技能目录下,会移入库、原位置留软链接(不是复制)",
 m_proj_label:"项目",m_empty_count:"处",
-radio_claude:".claude(Claude Code)",radio_codex:".codex(Codex)",radio_agents:".agents(通用)"
+radio_claude:".claude(Claude Code)",radio_codex:".codex(Codex)",radio_agents:".agents(通用)",radio_zcode:".zcode(zcode)",radio_workbuddy:".workbuddy(WorkBuddy)"
 },
 en:{
 app_name:"Skills Hub",app_sub:"Manage once · Use everywhere",
@@ -1969,8 +1982,8 @@ nav_skills:"Skills",nav_sets:"Sets",nav_usage:"Usage",nav_sources:"Sources",nav_
 autostart_on:"Service: Running",autostart_off:"Service: Not registered",lang_switch:"中文",
 h_skills:"Skills",sub_skills:"Skills live in the library. Toggle green = available there. Changes propagate everywhere.",
 btn_open_lib:"Open Library",btn_scan:"Scan Local Skills",btn_import:"Import Dir",btn_browse:"Browse…",btn_add_online:"Add Online",btn_new_skill:"＋ New Skill",
-t_scan_range:"Looks for unmanaged skills in these locations:",t_scan_range_proj:"Registered projects (each project's .claude/.codex/.agents/skills):",
-dd_more:"More scan scopes",dd_scan_global:"Scan global dirs only",dd_scan_global_hint:".claude/skills, .codex/skills, .agents/skills",
+t_scan_range:"Looks for unmanaged skills in these locations:",t_scan_range_proj:"Registered projects (each project's skill dirs):",
+dd_more:"More scan scopes",dd_scan_global:"Scan global dirs only",
 dd_scan_project:"Scan project dirs only",dd_scan_project_empty:"No registered projects yet — click \"+ Project\" on a skill card first",
 t_import_hint:"Import Dir = pick any directory (one skill, or a folder of skills) and copy it into the library, original untouched. Unlike \"Scan Local Skills\", which only looks in fixed locations (global + registered projects), this can import from anywhere.",
 ph_search:"Search name or description…",chip_all:"All",chip_own:"Own",chip_ext:"Imported",
@@ -1980,7 +1993,7 @@ sort_dir_asc:"Ascending — click for descending",sort_dir_desc:"Descending — 
 meta_created:"Created",meta_updated:"Updated",
 empty_skills:"No matching skills",no_desc:"No description yet",
 agent_claude:"Claude Code",agent_codex:"Codex",agent_opencode:"OpenCode",agent_zcode:"zcode",agent_workbuddy:"WorkBuddy",
-pill_claude:"Claude Global",pill_codex:"Codex Global",pill_agents:"Agents Global",pill_add_proj:"＋ Project",
+pill_claude:"Claude Global",pill_codex:"Codex Global",pill_agents:"Agents Global",pill_zcode:"zcode Global",pill_workbuddy:"WorkBuddy Global",pill_add_proj:"＋ Project",
 t_edit:"Edit",t_view:"View",t_check_update:"Check upstream for updates",t_fork:"Convert to standalone copy (editable, no longer follows source)",t_delete:"Delete",
 t_open_dir:"Open this skill's folder to add scripts and other files",t_open_dir_btn:"Open Dir",
 t_add_proj_title:"Enable in a specific project directory",
@@ -2002,7 +2015,7 @@ h_usage:"Usage",sub_usage:"Which skills are enabled where. Global = all sessions
 btn_clean:"Clean Stale Projects",h_global:"Global",h_projects:"Projects",n_places:"places",ph_search_proj:"Search projects…",
 empty_proj_new:"No projects using skills yet. Click ＋ Project on a skill in the Skills page.",empty_proj_match:"No matching projects",
 use_n_skills:"skills",use_no_skill:"No skills enabled here",use_pick:"＋ Enable Skill",use_close_title:"Click to disable here",
-cc_claude:"Claude Code (global)",cc_codex:"Codex (global)",cc_agents:"Agents (general, global)",
+cc_claude:"Claude Code (global)",cc_codex:"Codex (global)",cc_agents:"Agents (general, global)",cc_zcode:"zcode (global)",cc_workbuddy:"WorkBuddy (global)",
 stale_proj:"Stale projects (directory no longer exists): ",
 nav_insights:"Insights",h_insights:"Usage Insights",
 sub_insights:"Reference counts are computed live from current toggles. Trigger counts come from local session logs of Claude Code / Codex / OpenCode / zcode / WorkBuddy (Cursor not supported yet). Codex matches the Codex App's \"runs\" definition: turns that read the skill or ran its scripts, counted once per turn; we scan all history while the App only counts since the feature shipped (2026-05), so older skills show larger numbers here. The first run scans local session history and may take a few seconds.",
@@ -2072,7 +2085,7 @@ sync_restore_label:"Toggle states (which skills are globally on) are recorded in
 btn_profile_restore:"Restore toggle states",
 btn_copy:"Copy",
 copied:"Copied",
-h_settings:"Settings",h_behavior:"Behavior",clean_empty_label:"After removing a skill from a project, delete empty .claude/.codex/.agents dirs (keeps projects clean; global dirs are never touched)",
+h_settings:"Settings",h_behavior:"Behavior",clean_empty_label:"After removing a skill from a project, delete empty skill dirs like .claude/.codex (keeps projects clean; global dirs are never touched)",
 h_boundary:"Boundaries",
 bnd_1:"· Only manages skill storage, sources, sets, and enable locations. Does not execute skill content or auto-download anything.",
 bnd_2:"· All network actions (download / check updates / apply updates) only happen when you click the corresponding button.",
@@ -2087,9 +2100,9 @@ se_name_label:"Set name",se_hint:"Check skills to include in this set. Hover a c
 se_ph:"my-set (lowercase, digits, hyphens)",
 sc_close:"Close",
 m_new_skill_t:"New Skill",m_new_skill_h:"Name must be lowercase, digits, hyphens. Only SKILL.md is edited here; add scripts and other files via Open Dir.",
-m_scan_toast:"Scanning local .claude/.codex/.agents…",m_scan_none:"No unmanaged skills found — all are already in the library",
+m_scan_toast:"Scanning local skill dirs…",m_scan_none:"No unmanaged skills found — all are already in the library",
 m_scan_t:"Found COUNT unmanaged skills",m_scan_h:"Check the ones to adopt. Adopt = move into library, leave a link at the original location. Usage unchanged.",
-m_import_t:"Import from Directory",m_import_h:"Supports a single skill directory (with SKILL.md) or a folder of skill subdirectories. Only SKILL.md is recognized; other files are preserved as-is. If a skill is already inside a standard .claude/.codex/.agents location, it's adopted — moved into the library with a symlink left behind. Otherwise it's imported — copied into the library, original untouched.",
+m_import_t:"Import from Directory",m_import_h:"Supports a single skill directory (with SKILL.md) or a folder of skill subdirectories. Only SKILL.md is recognized; other files are preserved as-is. If a skill is already inside a standard skill location (.claude/.codex/…), it's adopted — moved into the library with a symlink left behind. Otherwise it's imported — copied into the library, original untouched.",
 m_import_find:"Find Skills",m_import_empty:"No skills with SKILL.md found in this directory",
 m_imp_ph:"/Users/you/Downloads/xxx-skills",
 m_addproj_t:"Enable \"SKILL\" in a Project",m_addproj_h:"Enter the full project directory path and choose which folder. The skill will only be available in that project.",
@@ -2118,7 +2131,7 @@ m_no_desc_i:"No description yet",
 m_row_conflict:"Name exists in library, skipped",m_row_invalid:"Name must be lowercase/digits/hyphens",
 m_row_adopt:"Adopt",m_row_adopt_hint:"Source is in a standard skill dir — will move into library and leave a symlink (not a copy)",
 m_proj_label:"Project",m_empty_count:"places",
-radio_claude:".claude (Claude Code)",radio_codex:".codex (Codex)",radio_agents:".agents (general)"
+radio_claude:".claude (Claude Code)",radio_codex:".codex (Codex)",radio_agents:".agents (general)",radio_zcode:".zcode (zcode)",radio_workbuddy:".workbuddy (WorkBuddy)"
 }};
 function t(k){return (I18N[LANG]&&I18N[LANG][k])||I18N.zh[k]||k}
 function tf(k,vars){let s=t(k);if(vars)for(const[k2,v]of Object.entries(vars))s=s.replace(k2,v);return s}
@@ -2214,8 +2227,16 @@ function renderNav(){
 }
 
 /* ---------- 技能页 ---------- */
+/* 目录族(.claude/.codex/.zcode/…)一律从 S.kinds 取,前端不再各处硬写族名。
+   visibleKinds():本机装了的 + always 的 + 这个技能已经放进去的(传 k 时),空位置不占版面。 */
+function allKinds(){return (S.kinds||[]).map(x=>x.kind)}
+function isKind(target){return allKinds().includes(target)}
+function visibleKinds(k){
+  return (S.kinds||[]).filter(x=>x.always||(S.kind_roots&&S.kind_roots[x.kind])
+    ||(k&&k.places[x.kind]&&k.places[x.kind]!=="absent"));
+}
 function placeLabel(target){       // 机器码(如 "claude" 或 "path::kind")-> 当前语言下的展示名
-  if(["claude","codex","agents"].includes(target))return t('pill_'+target);
+  if(isKind(target))return t('pill_'+target);
   const [p,kind]=target.split("::");
   return tf('t_place_project',{PATH:esc(p),KIND:esc(kind)});
 }
@@ -2302,9 +2323,7 @@ function skillCards(){
           <button class="ghost danger" title="${t('t_delete')}" onclick="delSkill('${k.name}')">✕</button></span></div>
       <div class="sk-desc" title="${esc(k.desc)}">${esc(k.desc)||`<i>${t('m_no_desc_i')}</i>`}</div>
       <div class="pills">
-        ${pill(k.name,"claude",t('pill_claude'),k.places.claude,"~/.claude/skills")}
-        ${pill(k.name,"codex",t('pill_codex'),k.places.codex,"~/.codex/skills")}
-        ${S.agents_root||k.places.agents!=="absent"?pill(k.name,"agents",t('pill_agents'),k.places.agents,"~/.agents/skills"):""}
+        ${visibleKinds(k).map(x=>pill(k.name,x.kind,t('pill_'+x.kind),k.places[x.kind],x.root)).join("")}
         ${projPills}
         <span class="pill add" title="${t('t_add_proj_title')}" onclick="addProject('${k.name}')">${t('pill_add_proj')}</span>
       </div>
@@ -2321,7 +2340,7 @@ function pageSkills(){
         <details class="dropdown"><summary title="${t('dd_more')}">▾</summary>
           <div class="dropdown-menu">
             <button onclick="this.closest('details').open=false;scanLocal('global')">
-              ${t('dd_scan_global')}<span class="dd-sub">${t('dd_scan_global_hint')}</span></button>
+              ${t('dd_scan_global')}<span class="dd-sub">${esc(globalSkillDirs().join(LANG==='en'?', ':'、'))}</span></button>
             <button onclick="this.closest('details').open=false;scanLocal('project')">
               ${t('dd_scan_project')}<span class="dd-sub">${esc(projRangeHint())}</span></button>
           </div>
@@ -2409,9 +2428,7 @@ function pageUsage(){
     <span class="sub">${t('sub_usage')}</span></div>
   <h2 style="font-size:12px;color:var(--muted);margin:16px 0 0">${t('h_global')}</h2>
   <div class="usegrid">
-    ${useCard("C",t('cc_claude'),"~/.claude/skills","claude",k=>k.places.claude)}
-    ${useCard("X",t('cc_codex'),"~/.codex/skills","codex",k=>k.places.codex)}
-    ${S.agents_root?useCard("A",t('cc_agents'),"~/.agents/skills","agents",k=>k.places.agents):""}
+    ${visibleKinds().map(x=>useCard(x.icon,t('cc_'+x.kind),x.root,x.kind,k=>k.places[x.kind])).join("")}
   </div>
   <div class="row" style="margin:20px 0 0">
     <h2 style="font-size:12px;color:var(--muted);margin:0">${t('h_projects')} <span class="hint" style="font-weight:400">${S.proj_targets.length} ${t('n_places')}</span></h2>
@@ -2426,7 +2443,7 @@ function pageUsage(){
 const REF_ACTIVE=new Set(["hub-link","copy-synced","copy-diverged"]);
 let RANGE=localStorage.getItem("ins_range")||"total", SORT_REFS=false;
 function refCounts(k){
-  const g=["claude","codex","agents"].filter(kind=>REF_ACTIVE.has(k.places[kind])).length;
+  const g=allKinds().filter(kind=>REF_ACTIVE.has(k.places[kind])).length;
   const p=Object.values(k.places.projects).filter(st=>REF_ACTIVE.has(st)).length;
   return {g,p};
 }
@@ -2770,12 +2787,13 @@ function checkRow(f,extra){
     ${adopt}${bad?`<span class="tag miss">${bad}</span>`:""}</label>`;
 }
 function checkedPaths(sel){return [...document.querySelectorAll(sel+' input:checked')].map(x=>x.dataset.p)}
-const GLOBAL_SKILL_DIRS=["~/.claude/skills","~/.codex/skills","~/.agents/skills"];
+function globalSkillDirs(){return (S.kinds||[]).map(x=>x.root)}
+function kindBraceList(){return "{"+allKinds().join(",")+"}"}
 function scanRangeTitle(){
-  let lines=[t('t_scan_range'),...GLOBAL_SKILL_DIRS];
+  let lines=[t('t_scan_range'),...globalSkillDirs()];
   if(S.projects&&S.projects.length){
     lines.push(t('t_scan_range_proj'));
-    lines=lines.concat(S.projects.map(p=>`${p}/.{claude,codex,agents}/skills`));
+    lines=lines.concat(S.projects.map(p=>`${p}/.${kindBraceList()}/skills`));
   }
   return lines.join("\n");
 }
@@ -2817,23 +2835,26 @@ async function impProbe(){
   $("#impList").innerHTML=(r.found||[]).map(f=>checkRow(f,f.desc)).join("")
     ||`<div class="empty">${t('m_import_empty')}</div>`;
 }
+/* 项目里放哪个目录族:项目下的 .<kind> 目录多半还不存在(选了才建),所以这里列全部族,
+   不像全局那样按目录是否存在过滤 */
+function kindRadios(){
+  return `<div class="row" style="margin-top:8px;flex-wrap:wrap">${
+    (S.kinds||[]).map((x,i)=>`<label class="hint"><input type="radio" name="pkind" value="${x.kind}"${
+      i===0?" checked":""}> ${t('radio_'+x.kind)}</label>`).join("")}</div>`;
+}
 function addProject(skill){
   const opts=S.projects.map(p=>`<option value="${esc(p)}">`).join("");
   askDialog(tf('m_addproj_t',{SKILL:skill}),t('m_addproj_h'),
   `<div class="row"><input type="text" id="askIn" list="projList" style="flex:1;min-width:0" placeholder="${t('m_addproj_ph')}">
    <button onclick="browseInto('#askIn')">${t('btn_browse')}</button></div>
    <datalist id="projList">${opts}</datalist>
-   <div class="row" style="margin-top:8px">
-     <label class="hint"><input type="radio" name="pkind" value="claude" checked> ${t('radio_claude')}</label>
-     <label class="hint"><input type="radio" name="pkind" value="codex"> ${t('radio_codex')}</label>
-     <label class="hint"><input type="radio" name="pkind" value="agents"> ${t('radio_agents')}</label>
-   </div>`,
+   ${kindRadios()}`,
   async()=>{const p=$("#askIn").value.trim();if(!p)return;
     const kind=document.querySelector('input[name=pkind]:checked').value;
     await toggle(p+"::"+kind,skill,true)})}
 function pickSkill(target,label){
   const here=S.skills.filter(k=>{
-    const st=["claude","codex","agents"].includes(target)?k.places[target]:(k.places.projects[target]||"absent");
+    const st=isKind(target)?k.places[target]:(k.places.projects[target]||"absent");
     return st==="absent"});
   askDialog(tf('m_pick_t',{LABEL:label}),t('m_pick_h'),
     here.map(k=>`<div class="srcskill"><b>${k.name}</b><span class="hint" style="flex:1">${esc(k.desc).slice(0,60)}</span>
@@ -2848,17 +2869,12 @@ function applySet(name,on){
   askDialog(tf('m_apply_t',{ACT:on?t('btn_apply'):t('btn_close'),NAME:name}),t('m_apply_h'),
   `<div class="hint" style="margin-bottom:4px">${t('m_apply_sel')}</div>
    <select id="askSel" style="width:100%">
-    <option value="claude">${t('pill_claude')}</option><option value="codex">${t('pill_codex')}</option>
-    ${S.agents_root?`<option value="agents">${t('pill_agents')}</option>`:""}
+    ${visibleKinds().map(x=>`<option value="${x.kind}">${t('pill_'+x.kind)}</option>`).join("")}
     ${S.proj_targets.map(t2=>`<option value="${esc(t2.target)}">${t('m_proj_label')}:${esc(t2.path)}(.${t2.kind})</option>`).join("")}</select>
    <div class="hint" style="margin:12px 0 4px">${t('m_apply_custom')}</div>
    <input type="text" id="askProj" list="projList2" style="width:100%" placeholder="${t('m_addproj_ph')}">
    <datalist id="projList2">${opts}</datalist>
-   <div class="row" style="margin-top:8px">
-     <label class="hint"><input type="radio" name="pkind" value="claude" checked> ${t('radio_claude')}</label>
-     <label class="hint"><input type="radio" name="pkind" value="codex"> ${t('radio_codex')}</label>
-     <label class="hint"><input type="radio" name="pkind" value="agents"> ${t('radio_agents')}</label>
-   </div>`,
+   ${kindRadios()}`,
   async()=>{
     const p=$("#askProj").value.trim();
     let target;

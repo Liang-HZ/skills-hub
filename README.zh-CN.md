@@ -8,7 +8,7 @@ Skills Hub 把本机所有 AI agent 技能收进一个本地库,并用真实数�
 
 ![Skills Hub 用量分析:每个技能在 Claude Code / Codex / OpenCode / zcode / WorkBuddy 上的真实触发次数,从未触发过的技能一目了然](docs/screenshot.png)
 
-所有技能(带 `SKILL.md` 的文件夹)的唯一真源放在本机的 `library/`,再链接到各个 agent 找技能的地方——Claude Code(`~/.claude/skills`)、Codex(`~/.codex/skills`)、通用 Agents(`~/.agents/skills`)或任意项目目录。改一处、处处生效;关掉开关只是摘链接,技能永远安全地留在库里。
+所有技能(带 `SKILL.md` 的文件夹)的唯一真源放在本机的 `library/`,再链接到各个 agent 找技能的地方——Claude Code(`~/.claude/skills`)、Codex(`~/.codex/skills`)、通用 Agents(`~/.agents/skills`)、zcode(`~/.zcode/skills`)、WorkBuddy(`~/.workbuddy/skills`),或任意项目目录(`<项目>/.claude/skills` 等)。本机没有的那几族不会露出来占版面。改一处、处处生效;关掉开关只是摘链接,技能永远安全地留在库里。
 
 - **真实触发次数,不是估算**——每个技能今天/近7天/近30天/累计的用量,可按 agent 拆分,直接读各 agent 自己的本地记录。从没用过的技能会自己沉到列表底部。
 - **健康建议**——点名僵尸技能(处处启用、从不触发)、值得升全局的多项目技能,并粗估这些常驻注入的技能描述每个会话花掉你多少上下文 token。

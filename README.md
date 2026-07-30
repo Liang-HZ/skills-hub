@@ -8,7 +8,7 @@ Skills Hub keeps every AI agent skill on your machine in one local library — a
 
 ![Skills Hub usage insights: per-skill trigger counts across Claude Code, Codex, OpenCode, zcode and WorkBuddy, with never-triggered skills called out](docs/screenshot-en.png)
 
-Every skill (a folder with a `SKILL.md`) has a single source of truth in a local `library/`, linked into wherever your agents look for skills — Claude Code (`~/.claude/skills`), Codex (`~/.codex/skills`), generic Agents (`~/.agents/skills`), or any project directory. Edit once, effective everywhere; flip a toggle off and the skill stays safe in the library.
+Every skill (a folder with a `SKILL.md`) has a single source of truth in a local `library/`, linked into wherever your agents look for skills — Claude Code (`~/.claude/skills`), Codex (`~/.codex/skills`), generic Agents (`~/.agents/skills`), zcode (`~/.zcode/skills`), WorkBuddy (`~/.workbuddy/skills`), or any project directory (`<project>/.claude/skills` and friends). Directory families you don't have on this machine stay hidden instead of cluttering the page. Edit once, effective everywhere; flip a toggle off and the skill stays safe in the library.
 
 - **Real trigger counts, not guesses** — per-skill usage across today / 7d / 30d / all time, split by agent, read straight from each agent's own local logs. The skills you never actually use sort themselves to the bottom.
 - **Health suggestions** — zombie skills (enabled everywhere, firing nowhere), promote-to-global candidates, and a context-tax estimate of what those always-injected skill descriptions cost you per session.

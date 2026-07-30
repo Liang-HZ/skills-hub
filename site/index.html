@@ -2,7 +2,7 @@
 <html lang="zh-CN"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Skills Hub — interactive demo · 技能库在线模拟</title>
-<meta name="description" content="Try Skills Hub in your browser: one local library for every AI agent skill (Claude Code / Codex / OpenCode), with real per-skill trigger counts. This is a simulation — nothing touches your machine.">
+<meta name="description" content="Try Skills Hub in your browser: one local library for every AI agent skill (Claude Code / Codex / OpenCode / zcode / WorkBuddy), with real per-skill trigger counts. This is a simulation — nothing touches your machine.">
 <meta property="og:title" content="Skills Hub — interactive demo">
 <meta property="og:description" content="You've installed a pile of agent skills. Which ones actually fire? Click around a live simulation of Skills Hub.">
 <meta property="og:type" content="website">
@@ -425,7 +425,7 @@ pre.demo-cmd .c{color:var(--faint)}
     <li><span class="n">3</span><div><b data-i18n="demo_i_3h">试试「组合」</b>
       <span class="d" data-i18n="demo_i_3d">把常一起用的技能存成一组,一键开关整组。</span></div></li>
   </ul>
-  <p class="demo-note" data-i18n="demo_i_note">数字是编出来的样例数据。真实版里,这些触发次数是从 Claude Code / Codex / OpenCode 各自的本地会话记录里数出来的——只读、不上传、不出你的机器。</p>
+  <p class="demo-note" data-i18n="demo_i_note">数字是编出来的样例数据。真实版里,这些触发次数是从 Claude Code / Codex / OpenCode / zcode / WorkBuddy 各自的本地会话记录里数出来的——只读、不上传、不出你的机器。</p>
   <div class="row" style="justify-content:flex-end;gap:8px">
     <button data-i18n="demo_i_close" onclick="demoIntro.close()">开始点</button>
     <button class="primary" data-i18n="demo_install" onclick="demoIntro.close();demoInstall.showModal()">装到本地</button>
@@ -454,7 +454,7 @@ python3 webui.py   <span class="c"># 打开 http://127.0.0.1:7799</span></pre>
 /* 模拟板的后端。真实管理台里这些请求打到本机 127.0.0.1:7799 的 Python 服务;
    这里全部在浏览器内存里应答,页面一刷新就复原。 */
 (function(){
-  const DATA = {"state": {"skills": [{"name": "api-docs", "desc": "Generate OpenAPI docs from route definitions and keep them in sync with code. Use after changing endpoints.", "origin": null, "places": {"claude": "hub-link", "codex": "absent", "agents": "absent", "projects": {"/Users/you/work/payments-api::claude": "absent", "/Users/you/work/web-app::claude": "absent", "/Users/you/work/data-pipeline::claude": "absent", "/Users/you/work/mobile-client::claude": "absent"}}, "created": 1784469208.8075423, "updated": 1784469208.8076122}, {"name": "branch-namer", "desc": "Generate branch names from task descriptions per team convention. Use before cutting a branch.", "origin": null, "places": {"claude": "absent", "codex": "absent", "agents": "absent", "projects": {"/Users/you/work/payments-api::claude": "absent", "/Users/you/work/web-app::claude": "hub-link", "/Users/you/work/data-pipeline::claude": "hub-link", "/Users/you/work/mobile-client::claude": "absent"}}, "created": 1784469208.8081048, "updated": 1784469208.8081772}, {"name": "changelog", "desc": "Generate a user-facing changelog from commits between two tags. Use before cutting a release.", "origin": null, "places": {"claude": "absent", "codex": "hub-link", "agents": "absent", "projects": {"/Users/you/work/payments-api::claude": "absent", "/Users/you/work/web-app::claude": "absent", "/Users/you/work/data-pipeline::claude": "absent", "/Users/you/work/mobile-client::claude": "absent"}}, "created": 1784469208.8074234, "updated": 1784469208.807513}, {"name": "code-review", "desc": "Review the working diff for correctness bugs and simplification wins, ranked by severity. Use before committing or opening a PR.", "origin": null, "places": {"claude": "hub-link", "codex": "hub-link", "agents": "absent", "projects": {"/Users/you/work/payments-api::claude": "hub-link", "/Users/you/work/web-app::claude": "hub-link", "/Users/you/work/data-pipeline::claude": "hub-link", "/Users/you/work/mobile-client::claude": "hub-link"}}, "created": 1784469208.8067293, "updated": 1784469208.8068385}, {"name": "commit-helper", "desc": "Read staged changes and draft a commit message matching the repo's history style. Use before git commit.", "origin": null, "places": {"claude": "hub-link", "codex": "hub-link", "agents": "hub-link", "projects": {"/Users/you/work/payments-api::claude": "hub-link", "/Users/you/work/web-app::claude": "hub-link", "/Users/you/work/data-pipeline::claude": "hub-link", "/Users/you/work/mobile-client::claude": "hub-link"}}, "created": 1784469208.806987, "updated": 1784469208.807057}, {"name": "dataviz", "desc": "Read before charting: color formula, form heuristics, light/dark validator. Use for any chart or dashboard task.", "origin": {"kind": "snapshot", "source": "anthropics/skills", "ref": "main", "commit": "a3f19c2", "path": "dataviz", "at": "2026-07-02T09:14:00"}, "places": {"claude": "hub-link", "codex": "absent", "agents": "hub-link", "projects": {"/Users/you/work/payments-api::claude": "absent", "/Users/you/work/web-app::claude": "absent", "/Users/you/work/data-pipeline::claude": "hub-link", "/Users/you/work/mobile-client::claude": "hub-link"}}, "created": 1784469208.8072112, "updated": 1784469208.8072886}, {"name": "meeting-notes", "desc": "Turn meeting transcripts into decisions plus an action list. Use when a transcript is pasted.", "origin": null, "places": {"claude": "hub-link", "codex": "absent", "agents": "hub-link", "projects": {"/Users/you/work/payments-api::claude": "absent", "/Users/you/work/web-app::claude": "absent", "/Users/you/work/data-pipeline::claude": "absent", "/Users/you/work/mobile-client::claude": "absent"}}, "created": 1784469208.8078914, "updated": 1784469209.0040324}, {"name": "pdf-extract", "desc": "Extract text and tables from PDFs, with OCR for scanned files. Use when a .pdf file is mentioned.", "origin": {"kind": "snapshot", "source": "anthropics/skills", "ref": "main", "commit": "a3f19c2", "path": "pdf", "at": "2026-07-02T09:14:00"}, "places": {"claude": "hub-link", "codex": "absent", "agents": "absent", "projects": {"/Users/you/work/payments-api::claude": "absent", "/Users/you/work/web-app::claude": "hub-link", "/Users/you/work/data-pipeline::claude": "hub-link", "/Users/you/work/mobile-client::claude": "hub-link"}}, "created": 1784469208.8070912, "updated": 1784469208.8071706}, {"name": "regex-helper", "desc": "Explain gnarly regexes and offer tested alternatives. Use when a regex is hard to read.", "origin": null, "places": {"claude": "absent", "codex": "hub-link", "agents": "absent", "projects": {"/Users/you/work/payments-api::claude": "absent", "/Users/you/work/web-app::claude": "absent", "/Users/you/work/data-pipeline::claude": "absent", "/Users/you/work/mobile-client::claude": "absent"}}, "created": 1784469208.8079982, "updated": 1784469208.816061}, {"name": "security-audit", "desc": "Review changes for injection, authz gaps, and leaked secrets. Use for auth or untrusted-input changes.", "origin": null, "places": {"claude": "hub-link", "codex": "absent", "agents": "absent", "projects": {"/Users/you/work/payments-api::claude": "absent", "/Users/you/work/web-app::claude": "absent", "/Users/you/work/data-pipeline::claude": "absent", "/Users/you/work/mobile-client::claude": "absent"}}, "created": 1784469208.807641, "updated": 1784469208.807713}, {"name": "slide-deck", "desc": "Turn an outline into a .pptx deck using templates and layouts. Use when a deck or slides are requested.", "origin": {"kind": "copy", "source": "anthropics/skills", "ref": "main", "commit": "7c02b81", "path": "pptx", "at": "2026-06-28T15:40:00"}, "places": {"claude": "hub-link", "codex": "absent", "agents": "absent", "projects": {"/Users/you/work/payments-api::claude": "absent", "/Users/you/work/web-app::claude": "absent", "/Users/you/work/data-pipeline::claude": "absent", "/Users/you/work/mobile-client::claude": "absent"}}, "created": 1784469208.8077495, "updated": 1784469208.8078575}, {"name": "sql-optimizer", "desc": "Analyze slow-query plans and suggest indexes or rewrites. Use when a query is reported slow.", "origin": null, "places": {"claude": "hub-link", "codex": "absent", "agents": "absent", "projects": {"/Users/you/work/payments-api::claude": "absent", "/Users/you/work/web-app::claude": "absent", "/Users/you/work/data-pipeline::claude": "absent", "/Users/you/work/mobile-client::claude": "hub-link"}}, "created": 1784469208.807328, "updated": 1784469208.807395}, {"name": "test-writer", "desc": "Write unit tests for changed functions, auto-detecting the framework and existing style. Use after writing new logic.", "origin": null, "places": {"claude": "hub-link", "codex": "absent", "agents": "absent", "projects": {"/Users/you/work/payments-api::claude": "hub-link", "/Users/you/work/web-app::claude": "hub-link", "/Users/you/work/data-pipeline::claude": "hub-link", "/Users/you/work/mobile-client::claude": "hub-link"}}, "created": 1784469208.8068802, "updated": 1784469208.8069553}], "projects": ["/Users/you/work/payments-api", "/Users/you/work/web-app", "/Users/you/work/data-pipeline", "/Users/you/work/mobile-client"], "proj_targets": [{"path": "/Users/you/work/payments-api", "kind": "claude", "target": "/Users/you/work/payments-api::claude"}, {"path": "/Users/you/work/web-app", "kind": "claude", "target": "/Users/you/work/web-app::claude"}, {"path": "/Users/you/work/data-pipeline", "kind": "claude", "target": "/Users/you/work/data-pipeline::claude"}, {"path": "/Users/you/work/mobile-client", "kind": "claude", "target": "/Users/you/work/mobile-client::claude"}], "agents_root": true, "stale_targets": [], "warnings": [], "divergences": [], "sets": {"daily-dev": ["code-review", "test-writer", "commit-helper"], "docs-and-reporting": ["pdf-extract", "slide-deck", "meeting-notes"], "release": ["changelog", "security-audit", "api-docs"]}, "sets_raw": {"daily-dev": "code-review\ntest-writer\ncommit-helper\n", "docs-and-reporting": "pdf-extract\nslide-deck\nmeeting-notes\n", "release": "changelog\nsecurity-audit\napi-docs\n"}, "sources": [], "clean_empty_dirs": true, "platform": "darwin", "autostart": true, "app_version": {"head": "32843b0 2026-07-19", "branch": "main", "origin": "", "tag": "v0.0.1"}, "sync_remote": "", "has_profile_file": false}, "usage": {"api-docs": {"total": 9, "d7": 0, "d30": 0, "today": 0, "last_day": "2026-06-04", "projects": 1, "by_agent": {"claude": {"total": 6, "d7": 0, "d30": 0, "today": 0}, "codex": {"total": 2, "d7": 0, "d30": 0, "today": 0}, "opencode": {"total": 1, "d7": 0, "d30": 0, "today": 0}}}, "branch-namer": {"total": 41, "d7": 18, "d30": 41, "today": 3, "last_day": "2026-07-19", "projects": 2, "by_agent": {"claude": {"total": 30, "d7": 7, "d30": 30, "today": 1}, "codex": {"total": 7, "d7": 7, "d30": 7, "today": 1}, "opencode": {"total": 4, "d7": 4, "d30": 4, "today": 1}}}, "changelog": {"total": 22, "d7": 13, "d30": 22, "today": 3, "last_day": "2026-07-19", "projects": 2, "by_agent": {"claude": {"total": 16, "d7": 7, "d30": 16, "today": 1}, "codex": {"total": 4, "d7": 4, "d30": 4, "today": 1}, "opencode": {"total": 2, "d7": 2, "d30": 2, "today": 1}}}, "code-review": {"total": 342, "d7": 122, "d30": 342, "today": 19, "last_day": "2026-07-19", "projects": 8, "by_agent": {"claude": {"total": 246, "d7": 92, "d30": 246, "today": 14}, "codex": {"total": 62, "d7": 21, "d30": 62, "today": 3}, "opencode": {"total": 34, "d7": 9, "d30": 34, "today": 2}}}, "commit-helper": {"total": 156, "d7": 54, "d30": 156, "today": 8, "last_day": "2026-07-19", "projects": 11, "by_agent": {"claude": {"total": 112, "d7": 40, "d30": 112, "today": 6}, "codex": {"total": 28, "d7": 7, "d30": 28, "today": 1}, "opencode": {"total": 16, "d7": 7, "d30": 16, "today": 1}}}, "dataviz": {"total": 61, "d7": 27, "d30": 61, "today": 4, "last_day": "2026-07-19", "projects": 4, "by_agent": {"claude": {"total": 44, "d7": 14, "d30": 44, "today": 2}, "codex": {"total": 11, "d7": 7, "d30": 11, "today": 1}, "opencode": {"total": 6, "d7": 6, "d30": 6, "today": 1}}}, "pdf-extract": {"total": 94, "d7": 37, "d30": 94, "today": 6, "last_day": "2026-07-19", "projects": 3, "by_agent": {"claude": {"total": 68, "d7": 23, "d30": 68, "today": 4}, "codex": {"total": 17, "d7": 7, "d30": 17, "today": 1}, "opencode": {"total": 9, "d7": 7, "d30": 9, "today": 1}}}, "security-audit": {"total": 3, "d7": 3, "d30": 3, "today": 2, "last_day": "2026-07-19", "projects": 1, "by_agent": {"claude": {"total": 2, "d7": 2, "d30": 2, "today": 1}, "codex": {"total": 1, "d7": 1, "d30": 1, "today": 1}}}, "sql-optimizer": {"total": 38, "d7": 18, "d30": 38, "today": 3, "last_day": "2026-07-19", "projects": 2, "by_agent": {"claude": {"total": 27, "d7": 7, "d30": 27, "today": 1}, "codex": {"total": 7, "d7": 7, "d30": 7, "today": 1}, "opencode": {"total": 4, "d7": 4, "d30": 4, "today": 1}}}, "test-writer": {"total": 188, "d7": 65, "d30": 188, "today": 11, "last_day": "2026-07-19", "projects": 5, "by_agent": {"claude": {"total": 135, "d7": 49, "d30": 135, "today": 8}, "codex": {"total": 34, "d7": 9, "d30": 34, "today": 2}, "opencode": {"total": 19, "d7": 7, "d30": 19, "today": 1}}}}, "bodies": {"api-docs": "---\nname: api-docs\ndescription: Generate OpenAPI docs from route definitions and keep them in sync with code. Use after changing endpoints.\n---\n\n# api-docs\n\n## 何时用 / When to use\n\n- 从路由定义生成 OpenAPI 文档并保持与代码同步。新增/修改接口后使用。\n- Generate OpenAPI docs from route definitions and keep them in sync with code. Use after changing endpoints.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "branch-namer": "---\nname: branch-namer\ndescription: Generate branch names from task descriptions per team convention. Use before cutting a branch.\n---\n\n# branch-namer\n\n## 何时用 / When to use\n\n- 按团队约定从任务描述生成分支名。开新分支前使用。\n- Generate branch names from task descriptions per team convention. Use before cutting a branch.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "changelog": "---\nname: changelog\ndescription: Generate a user-facing changelog from commits between two tags. Use before cutting a release.\n---\n\n# changelog\n\n## 何时用 / When to use\n\n- 从两个 tag 之间的提交生成面向用户的更新日志。发版前使用。\n- Generate a user-facing changelog from commits between two tags. Use before cutting a release.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "code-review": "---\nname: code-review\ndescription: Review the working diff for correctness bugs and simplification wins, ranked by severity. Use before committing or opening a PR.\n---\n\n# code-review\n\n## 何时用 / When to use\n\n- 审查改动中的正确性缺陷与可简化处,按严重度排序输出。提交前、开 PR 前使用。\n- Review the working diff for correctness bugs and simplification wins, ranked by severity. Use before committing or opening a PR.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "commit-helper": "---\nname: commit-helper\ndescription: Read staged changes and draft a commit message matching the repo's history style. Use before git commit.\n---\n\n# commit-helper\n\n## 何时用 / When to use\n\n- 读暂存区改动,生成符合仓库历史风格的提交信息。git commit 前使用。\n- Read staged changes and draft a commit message matching the repo's history style. Use before git commit.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "dataviz": "---\nname: dataviz\ndescription: Read before charting: color formula, form heuristics, light/dark validator. Use for any chart or dashboard task.\n---\n\n# dataviz\n\n## 何时用 / When to use\n\n- 画图表前先读:配色公式、图形选择启发式、明暗双主题校验器。任何图表/仪表盘任务使用。\n- Read before charting: color formula, form heuristics, light/dark validator. Use for any chart or dashboard task.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "meeting-notes": "---\nname: meeting-notes\ndescription: Turn meeting transcripts into decisions plus an action list. Use when a transcript is pasted.\n---\n\n# meeting-notes\n\n## 何时用 / When to use\n\n- 把会议记录整理成决议 + 待办清单。用户贴入会议纪要时使用。\n- Turn meeting transcripts into decisions plus an action list. Use when a transcript is pasted.\n\n## 步骤 / Steps\n\n1. …\n2. …\n\n<!-- 手动加的一行,没经过管理台 -->\n", "pdf-extract": "---\nname: pdf-extract\ndescription: Extract text and tables from PDFs, with OCR for scanned files. Use when a .pdf file is mentioned.\n---\n\n# pdf-extract\n\n## 何时用 / When to use\n\n- 从 PDF 里抽取文字与表格,支持扫描件 OCR。用户提到 .pdf 文件时使用。\n- Extract text and tables from PDFs, with OCR for scanned files. Use when a .pdf file is mentioned.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "regex-helper": "---\nname: regex-helper\ndescription: Explain gnarly regexes and offer tested alternatives. Use when a regex is hard to read.\n---\n\n# regex-helper\n\n## 何时用 / When to use\n\n- 解释复杂正则并生成带测试样例的替代写法。遇到看不懂的正则时使用。\n- Explain gnarly regexes and offer tested alternatives. Use when a regex is hard to read.\n\n## 步骤 / Steps\n\n1. …\n2. …\n\n更多示例见 [示例集](reference/examples.md)。\n", "security-audit": "---\nname: security-audit\ndescription: Review changes for injection, authz gaps, and leaked secrets. Use for auth or untrusted-input changes.\n---\n\n# security-audit\n\n## 何时用 / When to use\n\n- 审查改动中的注入、越权、密钥泄露风险。涉及认证或外部输入的改动使用。\n- Review changes for injection, authz gaps, and leaked secrets. Use for auth or untrusted-input changes.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "slide-deck": "---\nname: slide-deck\ndescription: Turn an outline into a .pptx deck using templates and layouts. Use when a deck or slides are requested.\n---\n\n# slide-deck\n\n## 何时用 / When to use\n\n- 把大纲变成 .pptx 演示文稿,套用模板与母版。用户要做 deck/slides 时使用。\n- Turn an outline into a .pptx deck using templates and layouts. Use when a deck or slides are requested.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "sql-optimizer": "---\nname: sql-optimizer\ndescription: Analyze slow-query plans and suggest indexes or rewrites. Use when a query is reported slow.\n---\n\n# sql-optimizer\n\n## 何时用 / When to use\n\n- 分析慢查询执行计划,给出索引与改写建议。用户抱怨查询慢时使用。\n- Analyze slow-query plans and suggest indexes or rewrites. Use when a query is reported slow.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "test-writer": "---\nname: test-writer\ndescription: Write unit tests for changed functions, auto-detecting the framework and existing style. Use after writing new logic.\n---\n\n# test-writer\n\n## 何时用 / When to use\n\n- 为改动的函数补单元测试,自动识别测试框架与既有风格。写完新逻辑后使用。\n- Write unit tests for changed functions, auto-detecting the framework and existing style. Use after writing new logic.\n\n## 步骤 / Steps\n\n1. …\n2. …\n"}, "lint": [{"skill": "meeting-notes", "kind": "dirty", "detail": "SKILL.md"}, {"skill": "regex-helper", "kind": "dead_link", "detail": "reference/examples.md"}]};
+  const DATA = {"state": {"skills": [{"name": "api-docs", "desc": "Generate OpenAPI docs from route definitions and keep them in sync with code. Use after changing endpoints.", "origin": null, "places": {"claude": "hub-link", "codex": "absent", "agents": "absent", "zcode": "absent", "workbuddy": "absent", "projects": {"/Users/you/work/payments-api::claude": "absent", "/Users/you/work/web-app::claude": "absent", "/Users/you/work/data-pipeline::claude": "absent", "/Users/you/work/mobile-client::claude": "absent"}}, "created": 1784469208.8075423, "updated": 1784469208.8076122}, {"name": "branch-namer", "desc": "Generate branch names from task descriptions per team convention. Use before cutting a branch.", "origin": null, "places": {"claude": "absent", "codex": "absent", "agents": "absent", "zcode": "absent", "workbuddy": "absent", "projects": {"/Users/you/work/payments-api::claude": "absent", "/Users/you/work/web-app::claude": "hub-link", "/Users/you/work/data-pipeline::claude": "hub-link", "/Users/you/work/mobile-client::claude": "absent"}}, "created": 1784469208.8081048, "updated": 1784469208.8081772}, {"name": "changelog", "desc": "Generate a user-facing changelog from commits between two tags. Use before cutting a release.", "origin": null, "places": {"claude": "absent", "codex": "hub-link", "agents": "absent", "zcode": "absent", "workbuddy": "absent", "projects": {"/Users/you/work/payments-api::claude": "absent", "/Users/you/work/web-app::claude": "absent", "/Users/you/work/data-pipeline::claude": "absent", "/Users/you/work/mobile-client::claude": "absent"}}, "created": 1784469208.8074234, "updated": 1784469208.807513}, {"name": "code-review", "desc": "Review the working diff for correctness bugs and simplification wins, ranked by severity. Use before committing or opening a PR.", "origin": null, "places": {"claude": "hub-link", "codex": "hub-link", "agents": "absent", "zcode": "hub-link", "workbuddy": "absent", "projects": {"/Users/you/work/payments-api::claude": "hub-link", "/Users/you/work/web-app::claude": "hub-link", "/Users/you/work/data-pipeline::claude": "hub-link", "/Users/you/work/mobile-client::claude": "hub-link"}}, "created": 1784469208.8067293, "updated": 1784469208.8068385}, {"name": "commit-helper", "desc": "Read staged changes and draft a commit message matching the repo's history style. Use before git commit.", "origin": null, "places": {"claude": "hub-link", "codex": "hub-link", "agents": "hub-link", "zcode": "absent", "workbuddy": "absent", "projects": {"/Users/you/work/payments-api::claude": "hub-link", "/Users/you/work/web-app::claude": "hub-link", "/Users/you/work/data-pipeline::claude": "hub-link", "/Users/you/work/mobile-client::claude": "hub-link"}}, "created": 1784469208.806987, "updated": 1784469208.807057}, {"name": "dataviz", "desc": "Read before charting: color formula, form heuristics, light/dark validator. Use for any chart or dashboard task.", "origin": {"kind": "snapshot", "source": "anthropics/skills", "ref": "main", "commit": "a3f19c2", "path": "dataviz", "at": "2026-07-02T09:14:00"}, "places": {"claude": "hub-link", "codex": "absent", "agents": "hub-link", "zcode": "absent", "workbuddy": "hub-link", "projects": {"/Users/you/work/payments-api::claude": "absent", "/Users/you/work/web-app::claude": "absent", "/Users/you/work/data-pipeline::claude": "hub-link", "/Users/you/work/mobile-client::claude": "hub-link"}}, "created": 1784469208.8072112, "updated": 1784469208.8072886}, {"name": "meeting-notes", "desc": "Turn meeting transcripts into decisions plus an action list. Use when a transcript is pasted.", "origin": null, "places": {"claude": "hub-link", "codex": "absent", "agents": "hub-link", "zcode": "absent", "workbuddy": "absent", "projects": {"/Users/you/work/payments-api::claude": "absent", "/Users/you/work/web-app::claude": "absent", "/Users/you/work/data-pipeline::claude": "absent", "/Users/you/work/mobile-client::claude": "absent"}}, "created": 1784469208.8078914, "updated": 1784469209.0040324}, {"name": "pdf-extract", "desc": "Extract text and tables from PDFs, with OCR for scanned files. Use when a .pdf file is mentioned.", "origin": {"kind": "snapshot", "source": "anthropics/skills", "ref": "main", "commit": "a3f19c2", "path": "pdf", "at": "2026-07-02T09:14:00"}, "places": {"claude": "hub-link", "codex": "absent", "agents": "absent", "zcode": "absent", "workbuddy": "hub-link", "projects": {"/Users/you/work/payments-api::claude": "absent", "/Users/you/work/web-app::claude": "hub-link", "/Users/you/work/data-pipeline::claude": "hub-link", "/Users/you/work/mobile-client::claude": "hub-link"}}, "created": 1784469208.8070912, "updated": 1784469208.8071706}, {"name": "regex-helper", "desc": "Explain gnarly regexes and offer tested alternatives. Use when a regex is hard to read.", "origin": null, "places": {"claude": "absent", "codex": "hub-link", "agents": "absent", "zcode": "absent", "workbuddy": "absent", "projects": {"/Users/you/work/payments-api::claude": "absent", "/Users/you/work/web-app::claude": "absent", "/Users/you/work/data-pipeline::claude": "absent", "/Users/you/work/mobile-client::claude": "absent"}}, "created": 1784469208.8079982, "updated": 1784469208.816061}, {"name": "security-audit", "desc": "Review changes for injection, authz gaps, and leaked secrets. Use for auth or untrusted-input changes.", "origin": null, "places": {"claude": "hub-link", "codex": "absent", "agents": "absent", "zcode": "absent", "workbuddy": "absent", "projects": {"/Users/you/work/payments-api::claude": "absent", "/Users/you/work/web-app::claude": "absent", "/Users/you/work/data-pipeline::claude": "absent", "/Users/you/work/mobile-client::claude": "absent"}}, "created": 1784469208.807641, "updated": 1784469208.807713}, {"name": "slide-deck", "desc": "Turn an outline into a .pptx deck using templates and layouts. Use when a deck or slides are requested.", "origin": {"kind": "copy", "source": "anthropics/skills", "ref": "main", "commit": "7c02b81", "path": "pptx", "at": "2026-06-28T15:40:00"}, "places": {"claude": "hub-link", "codex": "absent", "agents": "absent", "zcode": "absent", "workbuddy": "absent", "projects": {"/Users/you/work/payments-api::claude": "absent", "/Users/you/work/web-app::claude": "absent", "/Users/you/work/data-pipeline::claude": "absent", "/Users/you/work/mobile-client::claude": "absent"}}, "created": 1784469208.8077495, "updated": 1784469208.8078575}, {"name": "sql-optimizer", "desc": "Analyze slow-query plans and suggest indexes or rewrites. Use when a query is reported slow.", "origin": null, "places": {"claude": "hub-link", "codex": "absent", "agents": "absent", "zcode": "absent", "workbuddy": "absent", "projects": {"/Users/you/work/payments-api::claude": "absent", "/Users/you/work/web-app::claude": "absent", "/Users/you/work/data-pipeline::claude": "absent", "/Users/you/work/mobile-client::claude": "hub-link"}}, "created": 1784469208.807328, "updated": 1784469208.807395}, {"name": "test-writer", "desc": "Write unit tests for changed functions, auto-detecting the framework and existing style. Use after writing new logic.", "origin": null, "places": {"claude": "hub-link", "codex": "absent", "agents": "absent", "zcode": "hub-link", "workbuddy": "absent", "projects": {"/Users/you/work/payments-api::claude": "hub-link", "/Users/you/work/web-app::claude": "hub-link", "/Users/you/work/data-pipeline::claude": "hub-link", "/Users/you/work/mobile-client::claude": "hub-link"}}, "created": 1784469208.8068802, "updated": 1784469208.8069553}], "projects": ["/Users/you/work/payments-api", "/Users/you/work/web-app", "/Users/you/work/data-pipeline", "/Users/you/work/mobile-client"], "proj_targets": [{"path": "/Users/you/work/payments-api", "kind": "claude", "target": "/Users/you/work/payments-api::claude"}, {"path": "/Users/you/work/web-app", "kind": "claude", "target": "/Users/you/work/web-app::claude"}, {"path": "/Users/you/work/data-pipeline", "kind": "claude", "target": "/Users/you/work/data-pipeline::claude"}, {"path": "/Users/you/work/mobile-client", "kind": "claude", "target": "/Users/you/work/mobile-client::claude"}], "stale_targets": [], "warnings": [], "divergences": [], "sets": {"daily-dev": ["code-review", "test-writer", "commit-helper"], "docs-and-reporting": ["pdf-extract", "slide-deck", "meeting-notes"], "release": ["changelog", "security-audit", "api-docs"]}, "sets_raw": {"daily-dev": "code-review\ntest-writer\ncommit-helper\n", "docs-and-reporting": "pdf-extract\nslide-deck\nmeeting-notes\n", "release": "changelog\nsecurity-audit\napi-docs\n"}, "sources": [], "clean_empty_dirs": true, "platform": "darwin", "autostart": true, "app_version": {"head": "32843b0 2026-07-19", "branch": "main", "origin": "", "tag": "v0.0.1"}, "sync_remote": "", "has_profile_file": false, "kinds": [{"kind": "claude", "icon": "C", "always": true, "root": "~/.claude/skills"}, {"kind": "codex", "icon": "X", "always": true, "root": "~/.codex/skills"}, {"kind": "agents", "icon": "A", "always": false, "root": "~/.agents/skills"}, {"kind": "zcode", "icon": "Z", "always": false, "root": "~/.zcode/skills"}, {"kind": "workbuddy", "icon": "W", "always": false, "root": "~/.workbuddy/skills"}], "kind_roots": {"claude": true, "codex": true, "agents": true, "zcode": true, "workbuddy": true}}, "usage": {"api-docs": {"total": 11, "d7": 0, "d30": 0, "today": 0, "last_day": "2026-06-04", "projects": 1, "by_agent": {"claude": {"total": 6, "d7": 0, "d30": 0, "today": 0}, "codex": {"total": 2, "d7": 0, "d30": 0, "today": 0}, "opencode": {"total": 1, "d7": 0, "d30": 0, "today": 0}, "workbuddy": {"total": 2, "d7": 0, "d30": 0, "today": 0}}}, "branch-namer": {"total": 41, "d7": 18, "d30": 41, "today": 3, "last_day": "2026-07-19", "projects": 2, "by_agent": {"claude": {"total": 30, "d7": 7, "d30": 30, "today": 1}, "codex": {"total": 7, "d7": 7, "d30": 7, "today": 1}, "opencode": {"total": 4, "d7": 4, "d30": 4, "today": 1}}}, "changelog": {"total": 22, "d7": 13, "d30": 22, "today": 3, "last_day": "2026-07-19", "projects": 2, "by_agent": {"claude": {"total": 16, "d7": 7, "d30": 16, "today": 1}, "codex": {"total": 4, "d7": 4, "d30": 4, "today": 1}, "opencode": {"total": 2, "d7": 2, "d30": 2, "today": 1}}}, "code-review": {"total": 380, "d7": 133, "d30": 380, "today": 21, "last_day": "2026-07-19", "projects": 8, "by_agent": {"claude": {"total": 246, "d7": 92, "d30": 246, "today": 14}, "codex": {"total": 62, "d7": 21, "d30": 62, "today": 3}, "opencode": {"total": 34, "d7": 9, "d30": 34, "today": 2}, "zcode": {"total": 38, "d7": 11, "d30": 38, "today": 2}}}, "commit-helper": {"total": 156, "d7": 54, "d30": 156, "today": 8, "last_day": "2026-07-19", "projects": 11, "by_agent": {"claude": {"total": 112, "d7": 40, "d30": 112, "today": 6}, "codex": {"total": 28, "d7": 7, "d30": 28, "today": 1}, "opencode": {"total": 16, "d7": 7, "d30": 16, "today": 1}}}, "dataviz": {"total": 70, "d7": 30, "d30": 70, "today": 4, "last_day": "2026-07-19", "projects": 4, "by_agent": {"claude": {"total": 44, "d7": 14, "d30": 44, "today": 2}, "codex": {"total": 11, "d7": 7, "d30": 11, "today": 1}, "opencode": {"total": 6, "d7": 6, "d30": 6, "today": 1}, "workbuddy": {"total": 9, "d7": 3, "d30": 9, "today": 0}}}, "pdf-extract": {"total": 100, "d7": 37, "d30": 100, "today": 6, "last_day": "2026-07-19", "projects": 3, "by_agent": {"claude": {"total": 68, "d7": 23, "d30": 68, "today": 4}, "codex": {"total": 17, "d7": 7, "d30": 17, "today": 1}, "opencode": {"total": 9, "d7": 7, "d30": 9, "today": 1}, "workbuddy": {"total": 6, "d7": 0, "d30": 6, "today": 0}}}, "security-audit": {"total": 3, "d7": 3, "d30": 3, "today": 2, "last_day": "2026-07-19", "projects": 1, "by_agent": {"claude": {"total": 2, "d7": 2, "d30": 2, "today": 1}, "codex": {"total": 1, "d7": 1, "d30": 1, "today": 1}}}, "sql-optimizer": {"total": 38, "d7": 18, "d30": 38, "today": 3, "last_day": "2026-07-19", "projects": 2, "by_agent": {"claude": {"total": 27, "d7": 7, "d30": 27, "today": 1}, "codex": {"total": 7, "d7": 7, "d30": 7, "today": 1}, "opencode": {"total": 4, "d7": 4, "d30": 4, "today": 1}}}, "test-writer": {"total": 200, "d7": 69, "d30": 200, "today": 11, "last_day": "2026-07-19", "projects": 5, "by_agent": {"claude": {"total": 135, "d7": 49, "d30": 135, "today": 8}, "codex": {"total": 34, "d7": 9, "d30": 34, "today": 2}, "opencode": {"total": 19, "d7": 7, "d30": 19, "today": 1}, "zcode": {"total": 12, "d7": 4, "d30": 12, "today": 0}}}}, "bodies": {"api-docs": "---\nname: api-docs\ndescription: Generate OpenAPI docs from route definitions and keep them in sync with code. Use after changing endpoints.\n---\n\n# api-docs\n\n## 何时用 / When to use\n\n- 从路由定义生成 OpenAPI 文档并保持与代码同步。新增/修改接口后使用。\n- Generate OpenAPI docs from route definitions and keep them in sync with code. Use after changing endpoints.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "branch-namer": "---\nname: branch-namer\ndescription: Generate branch names from task descriptions per team convention. Use before cutting a branch.\n---\n\n# branch-namer\n\n## 何时用 / When to use\n\n- 按团队约定从任务描述生成分支名。开新分支前使用。\n- Generate branch names from task descriptions per team convention. Use before cutting a branch.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "changelog": "---\nname: changelog\ndescription: Generate a user-facing changelog from commits between two tags. Use before cutting a release.\n---\n\n# changelog\n\n## 何时用 / When to use\n\n- 从两个 tag 之间的提交生成面向用户的更新日志。发版前使用。\n- Generate a user-facing changelog from commits between two tags. Use before cutting a release.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "code-review": "---\nname: code-review\ndescription: Review the working diff for correctness bugs and simplification wins, ranked by severity. Use before committing or opening a PR.\n---\n\n# code-review\n\n## 何时用 / When to use\n\n- 审查改动中的正确性缺陷与可简化处,按严重度排序输出。提交前、开 PR 前使用。\n- Review the working diff for correctness bugs and simplification wins, ranked by severity. Use before committing or opening a PR.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "commit-helper": "---\nname: commit-helper\ndescription: Read staged changes and draft a commit message matching the repo's history style. Use before git commit.\n---\n\n# commit-helper\n\n## 何时用 / When to use\n\n- 读暂存区改动,生成符合仓库历史风格的提交信息。git commit 前使用。\n- Read staged changes and draft a commit message matching the repo's history style. Use before git commit.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "dataviz": "---\nname: dataviz\ndescription: Read before charting: color formula, form heuristics, light/dark validator. Use for any chart or dashboard task.\n---\n\n# dataviz\n\n## 何时用 / When to use\n\n- 画图表前先读:配色公式、图形选择启发式、明暗双主题校验器。任何图表/仪表盘任务使用。\n- Read before charting: color formula, form heuristics, light/dark validator. Use for any chart or dashboard task.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "meeting-notes": "---\nname: meeting-notes\ndescription: Turn meeting transcripts into decisions plus an action list. Use when a transcript is pasted.\n---\n\n# meeting-notes\n\n## 何时用 / When to use\n\n- 把会议记录整理成决议 + 待办清单。用户贴入会议纪要时使用。\n- Turn meeting transcripts into decisions plus an action list. Use when a transcript is pasted.\n\n## 步骤 / Steps\n\n1. …\n2. …\n\n<!-- 手动加的一行,没经过管理台 -->\n", "pdf-extract": "---\nname: pdf-extract\ndescription: Extract text and tables from PDFs, with OCR for scanned files. Use when a .pdf file is mentioned.\n---\n\n# pdf-extract\n\n## 何时用 / When to use\n\n- 从 PDF 里抽取文字与表格,支持扫描件 OCR。用户提到 .pdf 文件时使用。\n- Extract text and tables from PDFs, with OCR for scanned files. Use when a .pdf file is mentioned.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "regex-helper": "---\nname: regex-helper\ndescription: Explain gnarly regexes and offer tested alternatives. Use when a regex is hard to read.\n---\n\n# regex-helper\n\n## 何时用 / When to use\n\n- 解释复杂正则并生成带测试样例的替代写法。遇到看不懂的正则时使用。\n- Explain gnarly regexes and offer tested alternatives. Use when a regex is hard to read.\n\n## 步骤 / Steps\n\n1. …\n2. …\n\n更多示例见 [示例集](reference/examples.md)。\n", "security-audit": "---\nname: security-audit\ndescription: Review changes for injection, authz gaps, and leaked secrets. Use for auth or untrusted-input changes.\n---\n\n# security-audit\n\n## 何时用 / When to use\n\n- 审查改动中的注入、越权、密钥泄露风险。涉及认证或外部输入的改动使用。\n- Review changes for injection, authz gaps, and leaked secrets. Use for auth or untrusted-input changes.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "slide-deck": "---\nname: slide-deck\ndescription: Turn an outline into a .pptx deck using templates and layouts. Use when a deck or slides are requested.\n---\n\n# slide-deck\n\n## 何时用 / When to use\n\n- 把大纲变成 .pptx 演示文稿,套用模板与母版。用户要做 deck/slides 时使用。\n- Turn an outline into a .pptx deck using templates and layouts. Use when a deck or slides are requested.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "sql-optimizer": "---\nname: sql-optimizer\ndescription: Analyze slow-query plans and suggest indexes or rewrites. Use when a query is reported slow.\n---\n\n# sql-optimizer\n\n## 何时用 / When to use\n\n- 分析慢查询执行计划,给出索引与改写建议。用户抱怨查询慢时使用。\n- Analyze slow-query plans and suggest indexes or rewrites. Use when a query is reported slow.\n\n## 步骤 / Steps\n\n1. …\n2. …\n", "test-writer": "---\nname: test-writer\ndescription: Write unit tests for changed functions, auto-detecting the framework and existing style. Use after writing new logic.\n---\n\n# test-writer\n\n## 何时用 / When to use\n\n- 为改动的函数补单元测试,自动识别测试框架与既有风格。写完新逻辑后使用。\n- Write unit tests for changed functions, auto-detecting the framework and existing style. Use after writing new logic.\n\n## 步骤 / Steps\n\n1. …\n2. …\n"}, "lint": [{"skill": "meeting-notes", "kind": "dirty", "detail": "SKILL.md"}, {"skill": "regex-helper", "kind": "dead_link", "detail": "reference/examples.md"}]};
   const state = DATA.state, usage = DATA.usage, bodies = DATA.bodies;
 
   const J = o => new Response(JSON.stringify(o),
@@ -605,8 +605,8 @@ autostart_on:"管理台常驻 运行中",autostart_off:"管理台常驻 未注�
 // 技能页
 h_skills:"技能",sub_skills:"技能保存在库里,删不丢、改全生效。开关拨绿 = 在那个地方能用。",
 btn_open_lib:"打开库目录",btn_scan:"扫描本机技能",btn_import:"导入目录",btn_browse:"浏览…",btn_add_online:"从网上添加",btn_new_skill:"＋ 新建技能",
-t_scan_range:"在这些位置里找还没进库的技能:",t_scan_range_proj:"已登记项目(各自的 .claude/.codex/.agents/skills):",
-dd_more:"更多扫描范围",dd_scan_global:"只扫描全局目录",dd_scan_global_hint:".claude/skills、.codex/skills、.agents/skills",
+t_scan_range:"在这些位置里找还没进库的技能:",t_scan_range_proj:"已登记项目(各自的技能目录):",
+dd_more:"更多扫描范围",dd_scan_global:"只扫描全局目录",
 dd_scan_project:"只扫描项目目录",dd_scan_project_empty:"还没有登记任何项目,先在某个技能卡片上点「＋项目」",
 t_import_hint:"导入目录 = 你指定任意目录(单个技能或一堆技能),复制进库,原目录不动。跟「扫描本机技能」的区别:那个只在固定的几个位置(全局 + 已登记项目)里找,这个你想导哪就导哪。",
 ph_search:"搜技能名或描述…",chip_all:"全部",chip_own:"自建",chip_ext:"网上引入",
@@ -616,7 +616,7 @@ sort_dir_asc:"当前正序,点击切为倒序",sort_dir_desc:"当前倒序,点�
 meta_created:"创建",meta_updated:"更新",
 empty_skills:"没有匹配的技能",no_desc:"还没写 description",
 agent_claude:"Claude Code",agent_codex:"Codex",agent_opencode:"OpenCode",agent_zcode:"zcode",agent_workbuddy:"WorkBuddy",
-pill_claude:"Claude 全局",pill_codex:"Codex 全局",pill_agents:"Agents 全局",pill_add_proj:"＋ 项目",
+pill_claude:"Claude 全局",pill_codex:"Codex 全局",pill_agents:"Agents 全局",pill_zcode:"zcode 全局",pill_workbuddy:"WorkBuddy 全局",pill_add_proj:"＋ 项目",
 t_edit:"编辑",t_view:"查看",t_check_update:"检查上游更新",t_fork:"转为独立副本,以后可编辑,不再跟随来源",t_delete:"删除",
 t_open_dir:"打开这个技能的文件夹,放脚本等其他文件",t_open_dir_btn:"打开目录",
 t_add_proj_title:"在某个项目目录里单独启用",
@@ -642,7 +642,7 @@ h_usage:"使用情况",sub_usage:"每个地方各自开了哪些技能。全局 
 btn_clean:"清理失效项目",h_global:"全局",h_projects:"各项目",n_places:"处",ph_search_proj:"搜项目…",
 empty_proj_new:"还没有项目在用技能。在「技能」页点某个技能的「＋ 项目」即可。",empty_proj_match:"没有匹配的项目",
 use_n_skills:"个技能",use_no_skill:"这里没开任何技能",use_pick:"＋ 开启技能",use_close_title:"点击在这里关闭",
-cc_claude:"Claude Code(全局)",cc_codex:"Codex(全局)",cc_agents:"Agents(通用,全局)",
+cc_claude:"Claude Code(全局)",cc_codex:"Codex(全局)",cc_agents:"Agents(通用,全局)",cc_zcode:"zcode(全局)",cc_workbuddy:"WorkBuddy(全局)",
 stale_proj:"失效项目(目录已不存在):",
 // 用量分析页
 nav_insights:"用量分析",h_insights:"用量分析",
@@ -715,7 +715,7 @@ sync_restore_label:"开关状态(哪些技能全局开着)会随同步记录进�
 btn_profile_restore:"恢复开关状态",
 btn_copy:"复制",
 copied:"已复制",
-h_settings:"设置",h_behavior:"行为",clean_empty_label:"从项目移除技能后,若 .claude/.codex/.agents 目录已空则一并删掉(保持项目干净;全局目录永不动)",
+h_settings:"设置",h_behavior:"行为",clean_empty_label:"从项目移除技能后,若 .claude/.codex 等技能目录已空则一并删掉(保持项目干净;全局目录永不动)",
 h_boundary:"本工具的边界",
 bnd_1:"· 只管理技能的存储、来源、组合与启用位置,不执行技能内容,不自动下载任何东西。",
 bnd_2:"· 所有联网动作(下载来源 / 检查更新 / 执行更新)都只在你点击对应按钮时发生。",
@@ -737,9 +737,9 @@ se_ph:"my-set(小写字母、数字、连字符)",
 sc_close:"关闭",
 // JS 动态消息
 m_new_skill_t:"新建技能",m_new_skill_h:"名字只能用小写字母、数字、连字符。页面只编辑 SKILL.md;脚本等其他文件建好后用「打开目录」放进技能文件夹。",
-m_scan_toast:"正在扫描本机 .claude/.codex/.agents…",m_scan_none:"没有发现库外的技能,都已在库里了",
+m_scan_toast:"正在扫描本机各个技能目录…",m_scan_none:"没有发现库外的技能,都已在库里了",
 m_scan_t:"发现 COUNT 个库外技能",m_scan_h:"勾选要收进库的,点确定。收编 = 移进库、原位置留引用,用法不变;之后就能统一开关。",
-m_import_t:"从目录导入技能",m_import_h:"支持单个技能目录(内有 SKILL.md),或装着多个技能子目录的文件夹。只认 SKILL.md 这一个标准,其余文件原样保留。如果某个技能本来就在 .claude/.codex/.agents 的标准位置下,会按「收编」处理——移入库、原位置留软链接;其余按「导入」处理——复制进库,原目录不动。",
+m_import_t:"从目录导入技能",m_import_h:"支持单个技能目录(内有 SKILL.md),或装着多个技能子目录的文件夹。只认 SKILL.md 这一个标准,其余文件原样保留。如果某个技能本来就在 .claude/.codex 等标准位置下,会按「收编」处理——移入库、原位置留软链接;其余按「导入」处理——复制进库,原目录不动。",
 m_import_find:"查找技能",m_import_empty:"这个目录里没找到带 SKILL.md 的技能",
 m_imp_ph:"/Users/you/Downloads/xxx-skills",
 m_addproj_t:"在某个项目里用「SKILL」",m_addproj_h:"输入项目目录的完整路径,并选择放进哪个目录;这个技能将只对该项目生效",
@@ -768,7 +768,7 @@ m_no_desc_i:"还没写 description",
 m_row_conflict:"库里已有同名,跳过",m_row_invalid:"名字须小写字母/数字/连字符,改名后再来",
 m_row_adopt:"收编",m_row_adopt_hint:"源在标准技能目录下,会移入库、原位置留软链接(不是复制)",
 m_proj_label:"项目",m_empty_count:"处",
-radio_claude:".claude(Claude Code)",radio_codex:".codex(Codex)",radio_agents:".agents(通用)"
+radio_claude:".claude(Claude Code)",radio_codex:".codex(Codex)",radio_agents:".agents(通用)",radio_zcode:".zcode(zcode)",radio_workbuddy:".workbuddy(WorkBuddy)"
 },
 en:{
 app_name:"Skills Hub",app_sub:"Manage once · Use everywhere",
@@ -776,8 +776,8 @@ nav_skills:"Skills",nav_sets:"Sets",nav_usage:"Usage",nav_sources:"Sources",nav_
 autostart_on:"Service: Running",autostart_off:"Service: Not registered",lang_switch:"中文",
 h_skills:"Skills",sub_skills:"Skills live in the library. Toggle green = available there. Changes propagate everywhere.",
 btn_open_lib:"Open Library",btn_scan:"Scan Local Skills",btn_import:"Import Dir",btn_browse:"Browse…",btn_add_online:"Add Online",btn_new_skill:"＋ New Skill",
-t_scan_range:"Looks for unmanaged skills in these locations:",t_scan_range_proj:"Registered projects (each project's .claude/.codex/.agents/skills):",
-dd_more:"More scan scopes",dd_scan_global:"Scan global dirs only",dd_scan_global_hint:".claude/skills, .codex/skills, .agents/skills",
+t_scan_range:"Looks for unmanaged skills in these locations:",t_scan_range_proj:"Registered projects (each project's skill dirs):",
+dd_more:"More scan scopes",dd_scan_global:"Scan global dirs only",
 dd_scan_project:"Scan project dirs only",dd_scan_project_empty:"No registered projects yet — click \"+ Project\" on a skill card first",
 t_import_hint:"Import Dir = pick any directory (one skill, or a folder of skills) and copy it into the library, original untouched. Unlike \"Scan Local Skills\", which only looks in fixed locations (global + registered projects), this can import from anywhere.",
 ph_search:"Search name or description…",chip_all:"All",chip_own:"Own",chip_ext:"Imported",
@@ -787,7 +787,7 @@ sort_dir_asc:"Ascending — click for descending",sort_dir_desc:"Descending — 
 meta_created:"Created",meta_updated:"Updated",
 empty_skills:"No matching skills",no_desc:"No description yet",
 agent_claude:"Claude Code",agent_codex:"Codex",agent_opencode:"OpenCode",agent_zcode:"zcode",agent_workbuddy:"WorkBuddy",
-pill_claude:"Claude Global",pill_codex:"Codex Global",pill_agents:"Agents Global",pill_add_proj:"＋ Project",
+pill_claude:"Claude Global",pill_codex:"Codex Global",pill_agents:"Agents Global",pill_zcode:"zcode Global",pill_workbuddy:"WorkBuddy Global",pill_add_proj:"＋ Project",
 t_edit:"Edit",t_view:"View",t_check_update:"Check upstream for updates",t_fork:"Convert to standalone copy (editable, no longer follows source)",t_delete:"Delete",
 t_open_dir:"Open this skill's folder to add scripts and other files",t_open_dir_btn:"Open Dir",
 t_add_proj_title:"Enable in a specific project directory",
@@ -809,7 +809,7 @@ h_usage:"Usage",sub_usage:"Which skills are enabled where. Global = all sessions
 btn_clean:"Clean Stale Projects",h_global:"Global",h_projects:"Projects",n_places:"places",ph_search_proj:"Search projects…",
 empty_proj_new:"No projects using skills yet. Click ＋ Project on a skill in the Skills page.",empty_proj_match:"No matching projects",
 use_n_skills:"skills",use_no_skill:"No skills enabled here",use_pick:"＋ Enable Skill",use_close_title:"Click to disable here",
-cc_claude:"Claude Code (global)",cc_codex:"Codex (global)",cc_agents:"Agents (general, global)",
+cc_claude:"Claude Code (global)",cc_codex:"Codex (global)",cc_agents:"Agents (general, global)",cc_zcode:"zcode (global)",cc_workbuddy:"WorkBuddy (global)",
 stale_proj:"Stale projects (directory no longer exists): ",
 nav_insights:"Insights",h_insights:"Usage Insights",
 sub_insights:"Reference counts are computed live from current toggles. Trigger counts come from local session logs of Claude Code / Codex / OpenCode / zcode / WorkBuddy (Cursor not supported yet). Codex matches the Codex App's \"runs\" definition: turns that read the skill or ran its scripts, counted once per turn; we scan all history while the App only counts since the feature shipped (2026-05), so older skills show larger numbers here. The first run scans local session history and may take a few seconds.",
@@ -879,7 +879,7 @@ sync_restore_label:"Toggle states (which skills are globally on) are recorded in
 btn_profile_restore:"Restore toggle states",
 btn_copy:"Copy",
 copied:"Copied",
-h_settings:"Settings",h_behavior:"Behavior",clean_empty_label:"After removing a skill from a project, delete empty .claude/.codex/.agents dirs (keeps projects clean; global dirs are never touched)",
+h_settings:"Settings",h_behavior:"Behavior",clean_empty_label:"After removing a skill from a project, delete empty skill dirs like .claude/.codex (keeps projects clean; global dirs are never touched)",
 h_boundary:"Boundaries",
 bnd_1:"· Only manages skill storage, sources, sets, and enable locations. Does not execute skill content or auto-download anything.",
 bnd_2:"· All network actions (download / check updates / apply updates) only happen when you click the corresponding button.",
@@ -894,9 +894,9 @@ se_name_label:"Set name",se_hint:"Check skills to include in this set. Hover a c
 se_ph:"my-set (lowercase, digits, hyphens)",
 sc_close:"Close",
 m_new_skill_t:"New Skill",m_new_skill_h:"Name must be lowercase, digits, hyphens. Only SKILL.md is edited here; add scripts and other files via Open Dir.",
-m_scan_toast:"Scanning local .claude/.codex/.agents…",m_scan_none:"No unmanaged skills found — all are already in the library",
+m_scan_toast:"Scanning local skill dirs…",m_scan_none:"No unmanaged skills found — all are already in the library",
 m_scan_t:"Found COUNT unmanaged skills",m_scan_h:"Check the ones to adopt. Adopt = move into library, leave a link at the original location. Usage unchanged.",
-m_import_t:"Import from Directory",m_import_h:"Supports a single skill directory (with SKILL.md) or a folder of skill subdirectories. Only SKILL.md is recognized; other files are preserved as-is. If a skill is already inside a standard .claude/.codex/.agents location, it's adopted — moved into the library with a symlink left behind. Otherwise it's imported — copied into the library, original untouched.",
+m_import_t:"Import from Directory",m_import_h:"Supports a single skill directory (with SKILL.md) or a folder of skill subdirectories. Only SKILL.md is recognized; other files are preserved as-is. If a skill is already inside a standard skill location (.claude/.codex/…), it's adopted — moved into the library with a symlink left behind. Otherwise it's imported — copied into the library, original untouched.",
 m_import_find:"Find Skills",m_import_empty:"No skills with SKILL.md found in this directory",
 m_imp_ph:"/Users/you/Downloads/xxx-skills",
 m_addproj_t:"Enable \"SKILL\" in a Project",m_addproj_h:"Enter the full project directory path and choose which folder. The skill will only be available in that project.",
@@ -925,7 +925,7 @@ m_no_desc_i:"No description yet",
 m_row_conflict:"Name exists in library, skipped",m_row_invalid:"Name must be lowercase/digits/hyphens",
 m_row_adopt:"Adopt",m_row_adopt_hint:"Source is in a standard skill dir — will move into library and leave a symlink (not a copy)",
 m_proj_label:"Project",m_empty_count:"places",
-radio_claude:".claude (Claude Code)",radio_codex:".codex (Codex)",radio_agents:".agents (general)"
+radio_claude:".claude (Claude Code)",radio_codex:".codex (Codex)",radio_agents:".agents (general)",radio_zcode:".zcode (zcode)",radio_workbuddy:".workbuddy (WorkBuddy)"
 }};
 function t(k){return (I18N[LANG]&&I18N[LANG][k])||I18N.zh[k]||k}
 function tf(k,vars){let s=t(k);if(vars)for(const[k2,v]of Object.entries(vars))s=s.replace(k2,v);return s}
@@ -1021,8 +1021,16 @@ function renderNav(){
 }
 
 /* ---------- 技能页 ---------- */
+/* 目录族(.claude/.codex/.zcode/…)一律从 S.kinds 取,前端不再各处硬写族名。
+   visibleKinds():本机装了的 + always 的 + 这个技能已经放进去的(传 k 时),空位置不占版面。 */
+function allKinds(){return (S.kinds||[]).map(x=>x.kind)}
+function isKind(target){return allKinds().includes(target)}
+function visibleKinds(k){
+  return (S.kinds||[]).filter(x=>x.always||(S.kind_roots&&S.kind_roots[x.kind])
+    ||(k&&k.places[x.kind]&&k.places[x.kind]!=="absent"));
+}
 function placeLabel(target){       // 机器码(如 "claude" 或 "path::kind")-> 当前语言下的展示名
-  if(["claude","codex","agents"].includes(target))return t('pill_'+target);
+  if(isKind(target))return t('pill_'+target);
   const [p,kind]=target.split("::");
   return tf('t_place_project',{PATH:esc(p),KIND:esc(kind)});
 }
@@ -1109,9 +1117,7 @@ function skillCards(){
           <button class="ghost danger" title="${t('t_delete')}" onclick="delSkill('${k.name}')">✕</button></span></div>
       <div class="sk-desc" title="${esc(k.desc)}">${esc(k.desc)||`<i>${t('m_no_desc_i')}</i>`}</div>
       <div class="pills">
-        ${pill(k.name,"claude",t('pill_claude'),k.places.claude,"~/.claude/skills")}
-        ${pill(k.name,"codex",t('pill_codex'),k.places.codex,"~/.codex/skills")}
-        ${S.agents_root||k.places.agents!=="absent"?pill(k.name,"agents",t('pill_agents'),k.places.agents,"~/.agents/skills"):""}
+        ${visibleKinds(k).map(x=>pill(k.name,x.kind,t('pill_'+x.kind),k.places[x.kind],x.root)).join("")}
         ${projPills}
         <span class="pill add" title="${t('t_add_proj_title')}" onclick="addProject('${k.name}')">${t('pill_add_proj')}</span>
       </div>
@@ -1128,7 +1134,7 @@ function pageSkills(){
         <details class="dropdown"><summary title="${t('dd_more')}">▾</summary>
           <div class="dropdown-menu">
             <button onclick="this.closest('details').open=false;scanLocal('global')">
-              ${t('dd_scan_global')}<span class="dd-sub">${t('dd_scan_global_hint')}</span></button>
+              ${t('dd_scan_global')}<span class="dd-sub">${esc(globalSkillDirs().join(LANG==='en'?', ':'、'))}</span></button>
             <button onclick="this.closest('details').open=false;scanLocal('project')">
               ${t('dd_scan_project')}<span class="dd-sub">${esc(projRangeHint())}</span></button>
           </div>
@@ -1216,9 +1222,7 @@ function pageUsage(){
     <span class="sub">${t('sub_usage')}</span></div>
   <h2 style="font-size:12px;color:var(--muted);margin:16px 0 0">${t('h_global')}</h2>
   <div class="usegrid">
-    ${useCard("C",t('cc_claude'),"~/.claude/skills","claude",k=>k.places.claude)}
-    ${useCard("X",t('cc_codex'),"~/.codex/skills","codex",k=>k.places.codex)}
-    ${S.agents_root?useCard("A",t('cc_agents'),"~/.agents/skills","agents",k=>k.places.agents):""}
+    ${visibleKinds().map(x=>useCard(x.icon,t('cc_'+x.kind),x.root,x.kind,k=>k.places[x.kind])).join("")}
   </div>
   <div class="row" style="margin:20px 0 0">
     <h2 style="font-size:12px;color:var(--muted);margin:0">${t('h_projects')} <span class="hint" style="font-weight:400">${S.proj_targets.length} ${t('n_places')}</span></h2>
@@ -1233,7 +1237,7 @@ function pageUsage(){
 const REF_ACTIVE=new Set(["hub-link","copy-synced","copy-diverged"]);
 let RANGE=localStorage.getItem("ins_range")||"total", SORT_REFS=false;
 function refCounts(k){
-  const g=["claude","codex","agents"].filter(kind=>REF_ACTIVE.has(k.places[kind])).length;
+  const g=allKinds().filter(kind=>REF_ACTIVE.has(k.places[kind])).length;
   const p=Object.values(k.places.projects).filter(st=>REF_ACTIVE.has(st)).length;
   return {g,p};
 }
@@ -1577,12 +1581,13 @@ function checkRow(f,extra){
     ${adopt}${bad?`<span class="tag miss">${bad}</span>`:""}</label>`;
 }
 function checkedPaths(sel){return [...document.querySelectorAll(sel+' input:checked')].map(x=>x.dataset.p)}
-const GLOBAL_SKILL_DIRS=["~/.claude/skills","~/.codex/skills","~/.agents/skills"];
+function globalSkillDirs(){return (S.kinds||[]).map(x=>x.root)}
+function kindBraceList(){return "{"+allKinds().join(",")+"}"}
 function scanRangeTitle(){
-  let lines=[t('t_scan_range'),...GLOBAL_SKILL_DIRS];
+  let lines=[t('t_scan_range'),...globalSkillDirs()];
   if(S.projects&&S.projects.length){
     lines.push(t('t_scan_range_proj'));
-    lines=lines.concat(S.projects.map(p=>`${p}/.{claude,codex,agents}/skills`));
+    lines=lines.concat(S.projects.map(p=>`${p}/.${kindBraceList()}/skills`));
   }
   return lines.join("\n");
 }
@@ -1624,23 +1629,26 @@ async function impProbe(){
   $("#impList").innerHTML=(r.found||[]).map(f=>checkRow(f,f.desc)).join("")
     ||`<div class="empty">${t('m_import_empty')}</div>`;
 }
+/* 项目里放哪个目录族:项目下的 .<kind> 目录多半还不存在(选了才建),所以这里列全部族,
+   不像全局那样按目录是否存在过滤 */
+function kindRadios(){
+  return `<div class="row" style="margin-top:8px;flex-wrap:wrap">${
+    (S.kinds||[]).map((x,i)=>`<label class="hint"><input type="radio" name="pkind" value="${x.kind}"${
+      i===0?" checked":""}> ${t('radio_'+x.kind)}</label>`).join("")}</div>`;
+}
 function addProject(skill){
   const opts=S.projects.map(p=>`<option value="${esc(p)}">`).join("");
   askDialog(tf('m_addproj_t',{SKILL:skill}),t('m_addproj_h'),
   `<div class="row"><input type="text" id="askIn" list="projList" style="flex:1;min-width:0" placeholder="${t('m_addproj_ph')}">
    <button onclick="browseInto('#askIn')">${t('btn_browse')}</button></div>
    <datalist id="projList">${opts}</datalist>
-   <div class="row" style="margin-top:8px">
-     <label class="hint"><input type="radio" name="pkind" value="claude" checked> ${t('radio_claude')}</label>
-     <label class="hint"><input type="radio" name="pkind" value="codex"> ${t('radio_codex')}</label>
-     <label class="hint"><input type="radio" name="pkind" value="agents"> ${t('radio_agents')}</label>
-   </div>`,
+   ${kindRadios()}`,
   async()=>{const p=$("#askIn").value.trim();if(!p)return;
     const kind=document.querySelector('input[name=pkind]:checked').value;
     await toggle(p+"::"+kind,skill,true)})}
 function pickSkill(target,label){
   const here=S.skills.filter(k=>{
-    const st=["claude","codex","agents"].includes(target)?k.places[target]:(k.places.projects[target]||"absent");
+    const st=isKind(target)?k.places[target]:(k.places.projects[target]||"absent");
     return st==="absent"});
   askDialog(tf('m_pick_t',{LABEL:label}),t('m_pick_h'),
     here.map(k=>`<div class="srcskill"><b>${k.name}</b><span class="hint" style="flex:1">${esc(k.desc).slice(0,60)}</span>
@@ -1655,17 +1663,12 @@ function applySet(name,on){
   askDialog(tf('m_apply_t',{ACT:on?t('btn_apply'):t('btn_close'),NAME:name}),t('m_apply_h'),
   `<div class="hint" style="margin-bottom:4px">${t('m_apply_sel')}</div>
    <select id="askSel" style="width:100%">
-    <option value="claude">${t('pill_claude')}</option><option value="codex">${t('pill_codex')}</option>
-    ${S.agents_root?`<option value="agents">${t('pill_agents')}</option>`:""}
+    ${visibleKinds().map(x=>`<option value="${x.kind}">${t('pill_'+x.kind)}</option>`).join("")}
     ${S.proj_targets.map(t2=>`<option value="${esc(t2.target)}">${t('m_proj_label')}:${esc(t2.path)}(.${t2.kind})</option>`).join("")}</select>
    <div class="hint" style="margin:12px 0 4px">${t('m_apply_custom')}</div>
    <input type="text" id="askProj" list="projList2" style="width:100%" placeholder="${t('m_addproj_ph')}">
    <datalist id="projList2">${opts}</datalist>
-   <div class="row" style="margin-top:8px">
-     <label class="hint"><input type="radio" name="pkind" value="claude" checked> ${t('radio_claude')}</label>
-     <label class="hint"><input type="radio" name="pkind" value="codex"> ${t('radio_codex')}</label>
-     <label class="hint"><input type="radio" name="pkind" value="agents"> ${t('radio_agents')}</label>
-   </div>`,
+   ${kindRadios()}`,
   async()=>{
     const p=$("#askProj").value.trim();
     let target;
@@ -1821,7 +1824,7 @@ loadUsage();
     demo_i_2d:"这是本工具真正独有的地方:每个技能被实际触发了多少次。注意「从未触发」那一格——装了但从没用过的技能。",
     demo_i_3h:"试试「组合」",
     demo_i_3d:"把常一起用的技能存成一组,一键开关整组。",
-    demo_i_note:"数字是编出来的样例数据。真实版里,这些触发次数是从 Claude Code / Codex / OpenCode 各自的本地会话记录里数出来的——只读、不上传、不出你的机器。",
+    demo_i_note:"数字是编出来的样例数据。真实版里,这些触发次数是从 Claude Code / Codex / OpenCode / zcode / WorkBuddy 各自的本地会话记录里数出来的——只读、不上传、不出你的机器。",
     demo_i_close:"开始点",
     demo_n_title:"装到本地(真正能用的版本)",
     demo_n_lede:"模拟板只能看。要真的管理你机器上的技能,把它跑起来——只要 Python 3.9+ 和 Git,不装任何依赖。",
@@ -1841,7 +1844,7 @@ loadUsage();
     demo_i_2d:"This is the part no other skill manager has: how often each skill actually fired. Look at the \"never triggered\" tile — skills you installed and never used.",
     demo_i_3h:"Try Sets",
     demo_i_3d:"Group the skills you always use together, then flip the whole group with one click.",
-    demo_i_note:"These numbers are sample data. In the real thing they're counted from Claude Code's, Codex's and OpenCode's own local session logs — read-only, never uploaded, never leaving your machine.",
+    demo_i_note:"These numbers are sample data. In the real thing they're counted from Claude Code's, Codex's, OpenCode's, zcode's and WorkBuddy's own local session logs — read-only, never uploaded, never leaving your machine.",
     demo_i_close:"Start clicking",
     demo_n_title:"Install locally (the version that actually works)",
     demo_n_lede:"The demo is look-only. To really manage the skills on your machine, run it — Python 3.9+ and Git, no dependencies to install.",

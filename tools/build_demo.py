@@ -32,7 +32,7 @@ REPO = "https://github.com/Liang-HZ/skills-hub"
 # 给它加统计等于让一个本地工具往外回传。模拟板是 skills.liangai.org 上的公开页面,
 # 统计的是访客,不是任何人的技能库。website id 非密钥,可公开提交。
 HEAD = """<title>Skills Hub — interactive demo · 技能库在线模拟</title>
-<meta name="description" content="Try Skills Hub in your browser: one local library for every AI agent skill (Claude Code / Codex / OpenCode), with real per-skill trigger counts. This is a simulation — nothing touches your machine.">
+<meta name="description" content="Try Skills Hub in your browser: one local library for every AI agent skill (Claude Code / Codex / OpenCode / zcode / WorkBuddy), with real per-skill trigger counts. This is a simulation — nothing touches your machine.">
 <meta property="og:title" content="Skills Hub — interactive demo">
 <meta property="og:description" content="You've installed a pile of agent skills. Which ones actually fire? Click around a live simulation of Skills Hub.">
 <meta property="og:type" content="website">
@@ -256,7 +256,7 @@ BAR_HTML = r"""
     <li><span class="n">3</span><div><b data-i18n="demo_i_3h">试试「组合」</b>
       <span class="d" data-i18n="demo_i_3d">把常一起用的技能存成一组,一键开关整组。</span></div></li>
   </ul>
-  <p class="demo-note" data-i18n="demo_i_note">数字是编出来的样例数据。真实版里,这些触发次数是从 Claude Code / Codex / OpenCode 各自的本地会话记录里数出来的——只读、不上传、不出你的机器。</p>
+  <p class="demo-note" data-i18n="demo_i_note">数字是编出来的样例数据。真实版里,这些触发次数是从 Claude Code / Codex / OpenCode / zcode / WorkBuddy 各自的本地会话记录里数出来的——只读、不上传、不出你的机器。</p>
   <div class="row" style="justify-content:flex-end;gap:8px">
     <button data-i18n="demo_i_close" onclick="demoIntro.close()">开始点</button>
     <button class="primary" data-i18n="demo_install" onclick="demoIntro.close();demoInstall.showModal()">装到本地</button>
@@ -292,7 +292,7 @@ python3 webui.py   <span class="c"># 打开 http://127.0.0.1:7799</span></pre>
     demo_i_2d:"这是本工具真正独有的地方:每个技能被实际触发了多少次。注意「从未触发」那一格——装了但从没用过的技能。",
     demo_i_3h:"试试「组合」",
     demo_i_3d:"把常一起用的技能存成一组,一键开关整组。",
-    demo_i_note:"数字是编出来的样例数据。真实版里,这些触发次数是从 Claude Code / Codex / OpenCode 各自的本地会话记录里数出来的——只读、不上传、不出你的机器。",
+    demo_i_note:"数字是编出来的样例数据。真实版里,这些触发次数是从 Claude Code / Codex / OpenCode / zcode / WorkBuddy 各自的本地会话记录里数出来的——只读、不上传、不出你的机器。",
     demo_i_close:"开始点",
     demo_n_title:"装到本地(真正能用的版本)",
     demo_n_lede:"模拟板只能看。要真的管理你机器上的技能,把它跑起来——只要 Python 3.9+ 和 Git,不装任何依赖。",
@@ -312,7 +312,7 @@ python3 webui.py   <span class="c"># 打开 http://127.0.0.1:7799</span></pre>
     demo_i_2d:"This is the part no other skill manager has: how often each skill actually fired. Look at the \"never triggered\" tile — skills you installed and never used.",
     demo_i_3h:"Try Sets",
     demo_i_3d:"Group the skills you always use together, then flip the whole group with one click.",
-    demo_i_note:"These numbers are sample data. In the real thing they're counted from Claude Code's, Codex's and OpenCode's own local session logs — read-only, never uploaded, never leaving your machine.",
+    demo_i_note:"These numbers are sample data. In the real thing they're counted from Claude Code's, Codex's, OpenCode's, zcode's and WorkBuddy's own local session logs — read-only, never uploaded, never leaving your machine.",
     demo_i_close:"Start clicking",
     demo_n_title:"Install locally (the version that actually works)",
     demo_n_lede:"The demo is look-only. To really manage the skills on your machine, run it — Python 3.9+ and Git, no dependencies to install.",

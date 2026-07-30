@@ -9,6 +9,8 @@
      "claude": "hub-link",
      "codex": "absent",
      "agents": "absent",
+     "zcode": "absent",
+     "workbuddy": "absent",
      "projects": {
       "/Users/you/work/payments-api::claude": "absent",
       "/Users/you/work/web-app::claude": "absent",
@@ -27,6 +29,8 @@
      "claude": "absent",
      "codex": "absent",
      "agents": "absent",
+     "zcode": "absent",
+     "workbuddy": "absent",
      "projects": {
       "/Users/you/work/payments-api::claude": "absent",
       "/Users/you/work/web-app::claude": "hub-link",
@@ -45,6 +49,8 @@
      "claude": "absent",
      "codex": "hub-link",
      "agents": "absent",
+     "zcode": "absent",
+     "workbuddy": "absent",
      "projects": {
       "/Users/you/work/payments-api::claude": "absent",
       "/Users/you/work/web-app::claude": "absent",
@@ -63,6 +69,8 @@
      "claude": "hub-link",
      "codex": "hub-link",
      "agents": "absent",
+     "zcode": "hub-link",
+     "workbuddy": "absent",
      "projects": {
       "/Users/you/work/payments-api::claude": "hub-link",
       "/Users/you/work/web-app::claude": "hub-link",
@@ -81,6 +89,8 @@
      "claude": "hub-link",
      "codex": "hub-link",
      "agents": "hub-link",
+     "zcode": "absent",
+     "workbuddy": "absent",
      "projects": {
       "/Users/you/work/payments-api::claude": "hub-link",
       "/Users/you/work/web-app::claude": "hub-link",
@@ -106,6 +116,8 @@
      "claude": "hub-link",
      "codex": "absent",
      "agents": "hub-link",
+     "zcode": "absent",
+     "workbuddy": "hub-link",
      "projects": {
       "/Users/you/work/payments-api::claude": "absent",
       "/Users/you/work/web-app::claude": "absent",
@@ -124,6 +136,8 @@
      "claude": "hub-link",
      "codex": "absent",
      "agents": "hub-link",
+     "zcode": "absent",
+     "workbuddy": "absent",
      "projects": {
       "/Users/you/work/payments-api::claude": "absent",
       "/Users/you/work/web-app::claude": "absent",
@@ -149,6 +163,8 @@
      "claude": "hub-link",
      "codex": "absent",
      "agents": "absent",
+     "zcode": "absent",
+     "workbuddy": "hub-link",
      "projects": {
       "/Users/you/work/payments-api::claude": "absent",
       "/Users/you/work/web-app::claude": "hub-link",
@@ -167,6 +183,8 @@
      "claude": "absent",
      "codex": "hub-link",
      "agents": "absent",
+     "zcode": "absent",
+     "workbuddy": "absent",
      "projects": {
       "/Users/you/work/payments-api::claude": "absent",
       "/Users/you/work/web-app::claude": "absent",
@@ -185,6 +203,8 @@
      "claude": "hub-link",
      "codex": "absent",
      "agents": "absent",
+     "zcode": "absent",
+     "workbuddy": "absent",
      "projects": {
       "/Users/you/work/payments-api::claude": "absent",
       "/Users/you/work/web-app::claude": "absent",
@@ -210,6 +230,8 @@
      "claude": "hub-link",
      "codex": "absent",
      "agents": "absent",
+     "zcode": "absent",
+     "workbuddy": "absent",
      "projects": {
       "/Users/you/work/payments-api::claude": "absent",
       "/Users/you/work/web-app::claude": "absent",
@@ -228,6 +250,8 @@
      "claude": "hub-link",
      "codex": "absent",
      "agents": "absent",
+     "zcode": "absent",
+     "workbuddy": "absent",
      "projects": {
       "/Users/you/work/payments-api::claude": "absent",
       "/Users/you/work/web-app::claude": "absent",
@@ -246,6 +270,8 @@
      "claude": "hub-link",
      "codex": "absent",
      "agents": "absent",
+     "zcode": "hub-link",
+     "workbuddy": "absent",
      "projects": {
       "/Users/you/work/payments-api::claude": "hub-link",
       "/Users/you/work/web-app::claude": "hub-link",
@@ -285,7 +311,6 @@
     "target": "/Users/you/work/mobile-client::claude"
    }
   ],
-  "agents_root": true,
   "stale_targets": [],
   "warnings": [],
   "divergences": [],
@@ -322,11 +347,50 @@
    "tag": "v0.0.1"
   },
   "sync_remote": "",
-  "has_profile_file": false
+  "has_profile_file": false,
+  "kinds": [
+   {
+    "kind": "claude",
+    "icon": "C",
+    "always": true,
+    "root": "~/.claude/skills"
+   },
+   {
+    "kind": "codex",
+    "icon": "X",
+    "always": true,
+    "root": "~/.codex/skills"
+   },
+   {
+    "kind": "agents",
+    "icon": "A",
+    "always": false,
+    "root": "~/.agents/skills"
+   },
+   {
+    "kind": "zcode",
+    "icon": "Z",
+    "always": false,
+    "root": "~/.zcode/skills"
+   },
+   {
+    "kind": "workbuddy",
+    "icon": "W",
+    "always": false,
+    "root": "~/.workbuddy/skills"
+   }
+  ],
+  "kind_roots": {
+   "claude": true,
+   "codex": true,
+   "agents": true,
+   "zcode": true,
+   "workbuddy": true
+  }
  },
  "usage": {
   "api-docs": {
-   "total": 9,
+   "total": 11,
    "d7": 0,
    "d30": 0,
    "today": 0,
@@ -347,6 +411,12 @@
     },
     "opencode": {
      "total": 1,
+     "d7": 0,
+     "d30": 0,
+     "today": 0
+    },
+    "workbuddy": {
+     "total": 2,
      "d7": 0,
      "d30": 0,
      "today": 0
@@ -410,10 +480,10 @@
    }
   },
   "code-review": {
-   "total": 342,
-   "d7": 122,
-   "d30": 342,
-   "today": 19,
+   "total": 380,
+   "d7": 133,
+   "d30": 380,
+   "today": 21,
    "last_day": "2026-07-19",
    "projects": 8,
    "by_agent": {
@@ -433,6 +503,12 @@
      "total": 34,
      "d7": 9,
      "d30": 34,
+     "today": 2
+    },
+    "zcode": {
+     "total": 38,
+     "d7": 11,
+     "d30": 38,
      "today": 2
     }
    }
@@ -466,9 +542,9 @@
    }
   },
   "dataviz": {
-   "total": 61,
-   "d7": 27,
-   "d30": 61,
+   "total": 70,
+   "d7": 30,
+   "d30": 70,
    "today": 4,
    "last_day": "2026-07-19",
    "projects": 4,
@@ -490,13 +566,19 @@
      "d7": 6,
      "d30": 6,
      "today": 1
+    },
+    "workbuddy": {
+     "total": 9,
+     "d7": 3,
+     "d30": 9,
+     "today": 0
     }
    }
   },
   "pdf-extract": {
-   "total": 94,
+   "total": 100,
    "d7": 37,
-   "d30": 94,
+   "d30": 100,
    "today": 6,
    "last_day": "2026-07-19",
    "projects": 3,
@@ -518,6 +600,12 @@
      "d7": 7,
      "d30": 9,
      "today": 1
+    },
+    "workbuddy": {
+     "total": 6,
+     "d7": 0,
+     "d30": 6,
+     "today": 0
     }
    }
   },
@@ -572,9 +660,9 @@
    }
   },
   "test-writer": {
-   "total": 188,
-   "d7": 65,
-   "d30": 188,
+   "total": 200,
+   "d7": 69,
+   "d30": 200,
    "today": 11,
    "last_day": "2026-07-19",
    "projects": 5,
@@ -596,6 +684,12 @@
      "d7": 7,
      "d30": 19,
      "today": 1
+    },
+    "zcode": {
+     "total": 12,
+     "d7": 4,
+     "d30": 12,
+     "today": 0
     }
    }
   }
